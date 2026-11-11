@@ -39,3 +39,4 @@ describe('Ledger Aggregation', () => {
     expect(res.netCashBalance).toBe(40000.0);
   });
 });
+

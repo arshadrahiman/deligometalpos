@@ -204,3 +204,4 @@ export const DayBookPage: React.FC = () => {
     </div>
   );
 };
+

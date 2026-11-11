@@ -55,3 +55,4 @@ export function calculateBullionGST(
   const totalAmount = round(taxableAmount + gstAmount, 2);
   return { gstAmount, totalAmount };
 }
+

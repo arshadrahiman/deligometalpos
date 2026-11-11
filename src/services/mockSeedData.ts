@@ -354,3 +354,4 @@ export const SEED_STOCK_SUMMARY: BusinessStockSummary = {
   totalBusinessWorth: 6185250,
   todayProfit: 34500,
 };
+

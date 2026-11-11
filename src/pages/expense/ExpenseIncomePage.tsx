@@ -394,3 +394,4 @@ export const ExpenseIncomePage: React.FC = () => {
     </div>
   );
 };
+

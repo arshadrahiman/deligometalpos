@@ -265,3 +265,4 @@ export const LedgerSummaryPage: React.FC = () => {
     </div>
   );
 };
+

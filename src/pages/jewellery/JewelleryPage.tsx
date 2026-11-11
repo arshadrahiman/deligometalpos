@@ -311,3 +311,4 @@ export const JewelleryPage: React.FC = () => {
     </div>
   );
 };
+

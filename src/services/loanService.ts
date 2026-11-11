@@ -49,3 +49,4 @@ export const loanService = {
     return newEntry;
   },
 };
+

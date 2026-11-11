@@ -33,3 +33,4 @@ export const expenseService = {
     return newRecord;
   },
 };
+

@@ -161,3 +161,4 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     </Modal>
   );
 };
+

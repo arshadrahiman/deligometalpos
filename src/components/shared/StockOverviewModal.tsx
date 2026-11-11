@@ -205,3 +205,4 @@ export const StockOverviewModal: React.FC = () => {
     </Modal>
   );
 };
+

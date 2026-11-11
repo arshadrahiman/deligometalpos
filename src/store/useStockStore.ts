@@ -29,3 +29,4 @@ export const useStockStore = create<StockState>((set) => ({
     set({ summary: updated });
   },
 }));
+

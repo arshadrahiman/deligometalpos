@@ -47,3 +47,4 @@ describe('Jewellery Manufacturing & Wastage (JW Cases)', () => {
     expect(res.labourAmount).toBe(43825.0);
   });
 });
+

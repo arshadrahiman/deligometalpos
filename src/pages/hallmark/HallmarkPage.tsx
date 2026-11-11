@@ -269,3 +269,4 @@ export const HallmarkPage: React.FC = () => {
     </div>
   );
 };
+

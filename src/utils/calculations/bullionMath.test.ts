@@ -218,3 +218,4 @@ describe('Khar / Mel Metallurgical Alloy (KM Cases)', () => {
     expect(calculateKharMelAlloy(250.0, 95.0, 75.0, 0.0)).toBe(66.667);
   });
 });
+

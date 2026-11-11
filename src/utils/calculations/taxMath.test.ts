@@ -60,3 +60,4 @@ describe('Hallmark Charge & Bullion GST', () => {
     expect(res.totalAmount).toBe(103000.0);
   });
 });
+

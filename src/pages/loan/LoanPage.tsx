@@ -425,3 +425,4 @@ export const LoanPage: React.FC = () => {
     </div>
   );
 };
+

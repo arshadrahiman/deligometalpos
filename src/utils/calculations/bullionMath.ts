@@ -113,3 +113,4 @@ export function calculateKharMelAlloy(
   if (alloyDelta === 0) return 0;
   return round((currentWeight * purityDelta) / alloyDelta, 3);
 }
+

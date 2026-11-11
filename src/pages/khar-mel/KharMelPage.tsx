@@ -149,3 +149,4 @@ export const KharMelPage: React.FC = () => {
     </div>
   );
 };
+

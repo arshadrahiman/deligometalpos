@@ -42,3 +42,4 @@ export const stockService = {
     return updated;
   },
 };
+
