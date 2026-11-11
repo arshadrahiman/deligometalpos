@@ -203,3 +203,4 @@ This document outlines all mathematical calculations, formulas, rounding convent
 | **KM-03**| `50.000` | `91.60` | `91.60` | `0.00` | `0.000` | Already at target purity |
 | **KM-04**| `0.000` | `99.90` | `91.60` | `0.00` | `0.000` | Zero current weight |
 | **KM-05**| `250.000` | `95.00` | `75.00` | `0.00` | `66.667` | Diluting to 18K purity |
+

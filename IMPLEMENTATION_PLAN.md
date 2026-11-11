@@ -336,3 +336,4 @@ Each function will have corresponding Vitest unit tests verifying all 60+ test c
 - Functional verification: test all calculations against the live site formulas.
 - Console audit: zero unhandled exceptions or layout shifts.
 - Complete documentation in `PARITY_REPORT.md`.
+

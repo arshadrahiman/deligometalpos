@@ -126,3 +126,4 @@ This document specifies the exact visual language, color palette, typography, co
 | Mobile (`sm`) | `< 768px` | Full width stacked layouts, side-scrolling tables, sticky bottom actions, collapsible navigation drawer |
 | Tablet (`md`) | `768px - 1024px` | 2-column form grids, condensed table columns |
 | Desktop (`lg`/`xl`) | `>= 1024px` | Multi-pane POS terminal, dual-column Buy/Sell side-by-side, full sticky header navigation |
+

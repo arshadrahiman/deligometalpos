@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-poppins text-slate-800 bg-brand-surface antialiased;
+  }
+}
+
+/* Print Styles for 3-inch Thermal Slips & A4 Invoices */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .select-all,
+  .select-all * {
+    visibility: visible;
+  }
+  .select-all {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 2mm;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

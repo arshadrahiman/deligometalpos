@@ -346,3 +346,4 @@ All data tables follow a standardized interface powered by TanStack Table:
 6. **Storage & Service Layer**:
    - Data stored in `localStorage` under keys `hs_customers`, `hs_exchange_txns`, `hs_buysell_txns`, `hs_loan_entries`, `hs_expenses`, `hs_jewellery_orders`, `hs_refinery_invoices`, `hs_daybook_entries`.
    - Abstracted in `/src/services/` with async Promises mimicking real REST API endpoints for plug-and-play backend replacement.
+
