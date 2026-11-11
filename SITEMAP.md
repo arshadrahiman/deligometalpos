@@ -1,6 +1,6 @@
 # Site Map & Route Hierarchy
 
-This document maps all routes, components, and views of the Hambire Solutions Bullion & Jewellery ERP application.
+This document maps all routes, components, and views of the Deligo Technologies Bullion & Jewellery ERP application.
 
 ## Route Access Matrix
 

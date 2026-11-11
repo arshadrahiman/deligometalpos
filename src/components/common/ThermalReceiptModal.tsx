@@ -48,7 +48,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           <div className="text-center font-bold pb-2 border-b border-dashed border-black">
             <div className="text-sm font-extrabold tracking-wider">LAKSHMI GOLD TESTING</div>
             <div className="text-[10px] font-normal">Sarafa Bazaar, Indore (M.P.)</div>
-            <div className="text-[10px] font-normal">Helpline: +91 7879404501</div>
+            <div className="text-[10px] font-normal">Helpline: +91 9645808999</div>
           </div>
 
           <div className="py-2 border-b border-dashed border-black space-y-1">
@@ -136,7 +136,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
 
           <div className="text-center pt-2 text-[9px]">
             <div>Thank You! Visit Again</div>
-            <div>Powered by Hambire Solutions</div>
+            <div>Powered by Deligo Technologies</div>
           </div>
         </div>
 

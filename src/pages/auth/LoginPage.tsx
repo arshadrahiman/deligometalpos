@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { Sparkles, Phone, Lock, ArrowRight, ShieldCheck, HelpCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const [mobile, setMobile] = useState('7879404501');
+  const [mobile, setMobile] = useState('9645808999');
   const [password, setPassword] = useState('12345');
   const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -63,7 +63,7 @@ export const LoginPage: React.FC = () => {
             Lakshmi Gold Testing
           </h1>
           <p className="text-xs text-slate-500 font-medium">
-            Hambire Solutions Bullion & Jewellery ERP
+            Deligo Technologies Bullion & Jewellery ERP
           </p>
         </div>
 
@@ -181,8 +181,8 @@ export const LoginPage: React.FC = () => {
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               To reset your administrative password or recover test account access, contact
-              Hambire Solutions technical support helpline at{' '}
-              <span className="font-bold text-brand-maroon">+91 7879404501</span>.
+              Deligo Technologies technical support helpline at{' '}
+              <span className="font-bold text-brand-maroon">+91 9645808999</span>.
             </p>
             <button
               onClick={() => setForgotModalOpen(false)}

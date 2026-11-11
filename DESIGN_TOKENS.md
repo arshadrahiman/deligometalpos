@@ -1,6 +1,6 @@
 # Design Tokens & Styling Guidelines
 
-This document specifies the exact visual language, color palette, typography, component styling, and interactive states reverse-engineered from Hambire Solutions ERP.
+This document specifies the exact visual language, color palette, typography, component styling, and interactive states for Deligo Technologies ERP.
 
 ---
 

@@ -12,10 +12,10 @@ interface AuthState {
 const AUTH_STORAGE_KEY = 'hs_auth_session';
 
 const DEFAULT_ADMIN: UserProfile = {
-  name: 'rohit hambire',
+  name: 'Deligo Admin',
   shopName: 'Lakshmi Gold Testing',
   role: 'ADMINISTRATOR',
-  mobile: '7879404501',
+  mobile: '9645808999',
   subscriptionDaysRemaining: 7845,
 };
 
@@ -25,7 +25,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (mobile: string, password: string) => {
     // Support test account
-    if (mobile === '7879404501' && password === '12345') {
+    if (mobile === '9645808999' && password === '12345') {
       setItem(AUTH_STORAGE_KEY, DEFAULT_ADMIN);
       set({ user: DEFAULT_ADMIN, isAuthenticated: true });
       return { success: true, message: 'Login successful' };

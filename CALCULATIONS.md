@@ -1,6 +1,6 @@
 # Business Logic & Calculation Specifications
 
-This document outlines all mathematical calculations, formulas, rounding conventions, and 5+ test input/output verification pairs for the Hambire Solutions Bullion & Jewellery ERP system.
+This document outlines all mathematical calculations, formulas, rounding conventions, and 5+ test input/output verification pairs for the Deligo Technologies Bullion & Jewellery ERP system.
 
 ---
 

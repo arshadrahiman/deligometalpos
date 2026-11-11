@@ -1,6 +1,6 @@
-# Implementation Plan: Hambire Solutions ERP React Rebuild
+# Implementation Plan: Deligo Technologies ERP React Rebuild
 
-This implementation plan details the architecture, component hierarchy, state management, route map with authentication guards, service layer design, and sequential build order for rebuilding https://www.hambiresolutions.com/ as a pixel-perfect, fully functional React application.
+This implementation plan details the architecture, component hierarchy, state management, route map with authentication guards, service layer design, and sequential build order for building Deligo Technologies Bullion & Jewellery ERP as a pixel-perfect, fully functional React application.
 
 ---
 
@@ -21,7 +21,7 @@ This implementation plan details the architecture, component hierarchy, state ma
 ## 2. Directory & Folder Structure
 
 ```
-hambire-solutions/
+deligo-technologies/
 ├── public/
 │   ├── assets/
 │   │   ├── images/
@@ -234,7 +234,7 @@ App
 
 ### A. State Stores (Zustand)
 1. **`useAuthStore`**:
-   - `user`: Authenticated user profile (`{ name: 'rohit hambire', shopName: 'Lakshmi Gold Testing', role: 'ADMINISTRATOR', mobile: '7879404501' }`).
+   - `user`: Authenticated user profile (`{ name: 'Deligo Admin', shopName: 'Lakshmi Gold Testing', role: 'ADMINISTRATOR', mobile: '9645808999' }`).
    - `isAuthenticated`: Boolean.
    - `login(credentials)`: Validates against mock credentials.
    - `logout()`: Clears session.

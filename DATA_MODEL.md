@@ -1,6 +1,6 @@
 # Data Model & State Architecture
 
-This document specifies the complete domain model, entity relationships, fields, data types, mock schemas, and table interactions (sorting, filtering, pagination, CRUD behaviors) for Hambire Solutions Bullion & Jewellery ERP.
+This document specifies the complete domain model, entity relationships, fields, data types, mock schemas, and table interactions (sorting, filtering, pagination, CRUD behaviors) for Deligo Technologies Bullion & Jewellery ERP.
 
 ---
 

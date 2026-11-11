@@ -1,14 +1,13 @@
-# Parity Report: Hambire Solutions ERP React Rebuild
+# Parity Report: Deligo Technologies ERP React Rebuild
 
-This report documents the parity analysis, verified visual and behavioral matches, known architectural modernization improvements, and backend integration requirements for the React rebuild of [https://www.hambiresolutions.com/](https://www.hambiresolutions.com/).
+This report documents the parity analysis, verified visual and behavioral matches, known architectural modernization improvements, and backend integration requirements for the React rebuild of Deligo Technologies Bullion & Jewellery ERP.
 
 ---
 
 ## 1. Executive Summary
 
-- **Source Application**: Hambire Solutions Bullion & Jewellery ERP (PHP 7/8 + jQuery 3.6 + Bootstrap + DataTables).
-- **Target Application**: React 18 + Vite + TypeScript + Tailwind CSS + Zustand + React Router v6 + TanStack Table + Vitest.
-- **Test Account Verified**: Login ID: `7879404501` / Password: `12345` (Role: `ADMINISTRATOR`, Shop: `Lakshmi Gold Testing`).
+- **Application**: Deligo Technologies Bullion & Jewellery ERP (React 18 + Vite + TypeScript + Tailwind CSS + Zustand + React Router v6 + TanStack Table + Vitest).
+- **Test Account Verified**: Login ID: `9645808999` / Password: `12345` (Role: `ADMINISTRATOR`, Shop: `Lakshmi Gold Testing`).
 - **Visual Breakpoints Tested**: Desktop (`1440px × 900px`) and Mobile (`390px × 844px`).
 - **Unit Test Parity**: **61 of 61 Vitest unit tests passing (100%)** covering all bullion, loan, jewellery, tax, and metallurgical calculation formulas.
 - **Console Errors**: **0 errors** across all navigation flows and modal interactions.
@@ -100,3 +99,4 @@ For deploying this React frontend to a live production environment, the followin
    - Web Serial API / WebHID support for directly reading live weights from digital RS-232 bullion scales without manual typing.
 6. **Payment Gateway**:
    - Razorpay / Cashfree integration for renewing software SaaS subscriptions.
+

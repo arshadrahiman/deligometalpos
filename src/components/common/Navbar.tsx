@@ -62,7 +62,7 @@ export const Navbar: React.FC = () => {
             <span className="text-sm font-bold tracking-tight text-white line-clamp-1">
               {user?.shopName || 'Lakshmi Gold Testing'}
             </span>
-            <span className="text-[10px] text-slate-300 font-medium">Hambire Solutions ERP</span>
+            <span className="text-[10px] text-slate-300 font-medium">Deligo Technologies ERP</span>
           </div>
         </Link>
 
