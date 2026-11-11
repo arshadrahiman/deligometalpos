@@ -44,11 +44,13 @@ export function calculateDiffAmount(diffGold: number, ratePer10Gm: number): numb
 }
 
 /**
- * Calculates final payable/receivable cash including labor/handling charges
- * Formula: diffAmount + charges
+ * Calculates final payable/receivable cash deducting labor/handling charges
+ * Formula: diffAmount - charges
+ * In bullion exchange, testing/handling charges are subtracted from payout (or added to debt)
+ * Example from verified bill: diffAmount ₹12,800 - charges ₹300 = finalCash ₹12,500
  */
 export function calculateFinalCash(diffAmount: number, charges: number = 0): number {
-  return round((diffAmount || 0) + (charges || 0), 2);
+  return round((diffAmount || 0) - (charges || 0), 2);
 }
 
 /**

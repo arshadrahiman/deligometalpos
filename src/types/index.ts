@@ -69,10 +69,12 @@ export interface ExchangeTransaction {
   udhariBefore: {
     gold: number;
     cash: number;
+    silver?: number;
   };
   udhariAfter: {
     gold: number;
     cash: number;
+    silver?: number;
   };
   narration?: string;
 }

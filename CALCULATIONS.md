@@ -58,18 +58,19 @@ This document outlines all mathematical calculations, formulas, rounding convent
 ---
 
 ## 4. Final Cash Settlement
-- **Context**: Adds handling or labor charges to the Diff Amount.
+- **Context**: Deducts melting, testing, or handling charges from the customer payout (or adds to customer debt).
 - **Formula**:
-  $$\text{Final Cash (₹)} = \text{Diff Amount (₹)} + \text{Charges (₹)}$$
+  $$\text{Final Cash (₹)} = \text{Diff Amount (₹)} - \text{Charges (₹)}$$
 
 ### Test Cases:
 | Case ID | Input: `diffAmount` (₹) | Input: `charges` (₹) | Expected Output: `finalCash` (₹) | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **FC-01** | `75000.00` | `500.00` | `75500.00` | Standard positive settlement with fee |
-| **FC-02** | `-20000.00` | `300.00` | `-19700.00` | Negative settlement with fee adjustment |
-| **FC-03** | `0.00` | `250.00` | `250.00` | Zero gold difference, fee only |
-| **FC-04** | `150000.00` | `0.00` | `150000.00` | Zero charges edge case |
-| **FC-05** | `118109.63` | `1500.50` | `119610.13` | Decimal cents precision |
+| **FC-01** | `12800.00` | `300.00` | `12500.00` | Verified live bill case (Diff ₹12,800 - Charges ₹300 = ₹12,500) |
+| **FC-02** | `75000.00` | `500.00` | `74500.00` | Standard positive settlement deducting fee |
+| **FC-03** | `-20000.00` | `300.00` | `-20300.00` | Negative settlement with fee deduction (-₹20,000 - ₹300 = -₹20,300) |
+| **FC-04** | `0.00` | `250.00` | `-250.00` | Zero gold difference, fee only payable by customer |
+| **FC-05** | `150000.00` | `0.00` | `150000.00` | Zero charges edge case |
+| **FC-06** | `118109.63` | `1500.50` | `116609.13` | Decimal cents precision |
 
 ---
 

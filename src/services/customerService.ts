@@ -7,7 +7,7 @@ const STORAGE_KEY = 'hs_customers';
 export const customerService = {
   async getAll(): Promise<Customer[]> {
     let customers = getItem<Customer[]>(STORAGE_KEY, []);
-    if (!customers || customers.length === 0) {
+    if (!customers || customers.length === 0 || !customers.some((c) => c.customerNo === 100)) {
       customers = SEED_CUSTOMERS;
       setItem(STORAGE_KEY, customers);
     }

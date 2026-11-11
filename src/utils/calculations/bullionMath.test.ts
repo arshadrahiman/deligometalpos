@@ -92,24 +92,28 @@ describe('Gold Difference Monetary Valuation (DA Cases)', () => {
 });
 
 describe('Final Cash Settlement (FC Cases)', () => {
-  it('FC-01: Standard positive settlement with fee', () => {
-    expect(calculateFinalCash(75000.0, 500.0)).toBe(75500.0);
+  it('FC-01: Verified live bill case (Diff Amount ₹12,800 - Charges ₹300 = ₹12,500)', () => {
+    expect(calculateFinalCash(12800.0, 300.0)).toBe(12500.0);
   });
 
-  it('FC-02: Negative settlement with fee adjustment', () => {
-    expect(calculateFinalCash(-20000.0, 300.0)).toBe(-19700.0);
+  it('FC-02: Standard positive settlement deducting fee (₹75,000 - ₹500 = ₹74,500)', () => {
+    expect(calculateFinalCash(75000.0, 500.0)).toBe(74500.0);
   });
 
-  it('FC-03: Zero gold difference, fee only', () => {
-    expect(calculateFinalCash(0.0, 250.0)).toBe(250.0);
+  it('FC-03: Negative settlement with fee deduction (-₹20,000 - ₹300 = -₹20,300)', () => {
+    expect(calculateFinalCash(-20000.0, 300.0)).toBe(-20300.0);
   });
 
-  it('FC-04: Zero charges edge case', () => {
+  it('FC-04: Zero gold difference, fee only payable by customer (0 - ₹250 = -₹250)', () => {
+    expect(calculateFinalCash(0.0, 250.0)).toBe(-250.0);
+  });
+
+  it('FC-05: Zero charges edge case', () => {
     expect(calculateFinalCash(150000.0, 0.0)).toBe(150000.0);
   });
 
-  it('FC-05: Decimal cents precision', () => {
-    expect(calculateFinalCash(118109.63, 1500.5)).toBe(119610.13);
+  it('FC-06: Decimal cents precision (₹118,109.63 - ₹1,500.50 = ₹116,609.13)', () => {
+    expect(calculateFinalCash(118109.63, 1500.5)).toBe(116609.13);
   });
 });
 

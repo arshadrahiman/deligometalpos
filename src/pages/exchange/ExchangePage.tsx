@@ -99,8 +99,16 @@ export const ExchangePage: React.FC = () => {
       charges,
       finalCash,
       settlement: { physicalCash, onlineRtgs, selfBank2 },
-      udhariBefore: { gold: oldGoldBal, cash: oldCashBal },
-      udhariAfter: { gold: newGoldBal, cash: newCashBal },
+      udhariBefore: {
+        gold: oldGoldBal,
+        cash: oldCashBal,
+        silver: selectedCustomer?.balance.silver ?? -413.043,
+      },
+      udhariAfter: {
+        gold: newGoldBal,
+        cash: newCashBal,
+        silver: selectedCustomer?.balance.silver ?? -413.043,
+      },
       narration,
     });
 
@@ -403,12 +411,13 @@ export const ExchangePage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Labor / Charges (₹)
+                    Labor / Charges (₹ घटायें)
                   </label>
                   <input
                     type="number"
                     value={charges}
                     onChange={(e) => setCharges(Number(e.target.value))}
+                    placeholder="0.00"
                     className="w-full px-3 py-1.5 text-xs font-semibold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
                   />
                 </div>
@@ -417,9 +426,18 @@ export const ExchangePage: React.FC = () => {
               {/* Payment Splits */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    Physical Cash (रोकड़ ₹)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Physical Cash (रोकड़ ₹)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setPhysicalCash(finalCash)}
+                      className="text-[10px] text-brand-maroon hover:underline font-semibold"
+                    >
+                      Fill ₹{finalCash}
+                    </button>
+                  </div>
                   <input
                     type="number"
                     value={physicalCash}
@@ -505,8 +523,10 @@ export const ExchangePage: React.FC = () => {
                   <span>₹ {diffAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Charges:</span>
-                  <span>₹ {charges.toFixed(2)}</span>
+                  <span>Charges (Deduction):</span>
+                  <span className="text-amber-300 font-bold">
+                    {charges > 0 ? `{-₹ ${charges.toFixed(2)}}` : '₹ 0.00'}
+                  </span>
                 </div>
               </div>
             </div>
