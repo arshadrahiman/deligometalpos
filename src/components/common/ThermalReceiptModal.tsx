@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Modal } from './Modal';
 import { Printer, Share2 } from 'lucide-react';
 import { ExchangeTransaction } from '../../types';
+import { settingsService } from '../../services/settingsService';
 
 interface ThermalReceiptModalProps {
   isOpen: boolean;
@@ -99,6 +100,14 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   const oldCash = transaction.udhariBefore?.cash ?? 23530;
   const oldSilver = transaction.udhariBefore?.silver ?? -413.043;
 
+  const settings = settingsService.getSettings();
+  const shopName = settings.name || 'Lakshmi Gold Testing';
+  const shopAddress = settings.address || 'mp nagar zone - 1, bhopal, madhya pradesh';
+  const shopPhones = `${settings.landline_no || '1234567890'}, ${settings.mobile_no || '9645808999'}`;
+  const headerMantra = settings.thermal_header || '|| Shri Ganeshay Namah ||';
+  const footerLeft = settings.thermal_footer_left || 'Thank You \u00a0\u00a0\u00a0\u00a0 Visit Again';
+  const footerRight = settings.thermal_footer_right || 'Deligo Technologies ®';
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="3-INCH THERMAL RECEIPT SLIP" maxWidth="sm">
       <div className="space-y-4">
@@ -111,7 +120,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           {/* Top Inscription & Exchange Type */}
           <div className="relative text-center pb-1">
             <div className="text-[11px] font-bold tracking-wider">
-              || Shri Ganeshay Namah ||
+              {headerMantra}
             </div>
             <div className="text-right text-[10px] font-bold">
               (Exchange {transaction.type === 'BUY' ? 'B' : 'S'})
@@ -123,13 +132,13 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           {/* Shop Header */}
           <div className="text-center py-0.5 space-y-0.5">
             <div className="text-sm font-extrabold tracking-wide">
-              Lakshmi Gold Testing
+              {shopName}
             </div>
             <div className="text-[10px] text-black">
-              mp nagar zone - 1, bhopal, madhya pradesh
+              {shopAddress}
             </div>
             <div className="text-[10px] text-black tracking-wider">
-              1234567890, 9645808999
+              {shopPhones}
             </div>
           </div>
 
@@ -262,12 +271,12 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           {/* Footer Inscription */}
           <div className="text-center pt-2 pb-1 text-[10px] space-y-2">
             <div className="font-serif italic text-xs tracking-wider">
-              Thank You &nbsp;&nbsp;&nbsp;&nbsp; Visit Again
+              {footerLeft}
             </div>
             <div className="text-[9px] text-slate-700 leading-tight">
               <div>Software by :-</div>
               <div className="font-bold text-[10px] tracking-wide text-black">
-                Deligo Technologies ®
+                {footerRight}
               </div>
             </div>
           </div>

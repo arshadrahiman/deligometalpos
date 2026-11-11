@@ -48,6 +48,7 @@ export const Navbar: React.FC = () => {
     { name: 'Certificates (प्रमाणपत्र)', path: '/certificates' },
     { name: 'Khar / Mel (खार / मेल)', path: '/khar-mel' },
     { name: 'Touch Form (टंच फॉर्म)', path: '/touch-form' },
+    { name: 'Extra Settings (एक्स्ट्रा सेटिंग्स)', path: '/settings/extra' },
   ];
 
   return (
@@ -139,9 +140,9 @@ export const Navbar: React.FC = () => {
 
           {/* Settings Hub Link */}
           <Link
-            to="/"
+            to="/settings/extra"
             className="p-1.5 rounded text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
-            title="Dashboard & Settings Hub"
+            title="Extra Settings (सॉफ्टवेयर सेटिंग्स)"
           >
             <Settings className="h-4 w-4" />
           </Link>

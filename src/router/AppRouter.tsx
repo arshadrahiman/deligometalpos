@@ -19,6 +19,7 @@ import { DayBookPage } from '../pages/day-book/DayBookPage';
 import { CertificatePage } from '../pages/certificate/CertificatePage';
 import { KharMelPage } from '../pages/khar-mel/KharMelPage';
 import { TouchFormPage } from '../pages/touch-form/TouchFormPage';
+import { ExtraSettingsPage } from '../pages/settings/ExtraSettingsPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -46,6 +47,9 @@ export const AppRouter: React.FC = () => {
           <Route path="/certificates" element={<CertificatePage />} />
           <Route path="/khar-mel" element={<KharMelPage />} />
           <Route path="/touch-form" element={<TouchFormPage />} />
+          <Route path="/settings/extra" element={<ExtraSettingsPage />} />
+          <Route path="/settings/shop" element={<ExtraSettingsPage />} />
+          <Route path="/settings" element={<ExtraSettingsPage />} />
         </Route>
       </Route>
 

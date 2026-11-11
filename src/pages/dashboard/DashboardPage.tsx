@@ -20,13 +20,17 @@ import {
   RefreshCw,
   Edit3,
   Save,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { getItem, setItem } from '../../services/storage';
+import { ExtraSettingsModal } from '../../components/settings/ExtraSettingsModal';
 
 export const DashboardPage: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { openStockModal, openBhavcutModal, showToast } = useUIStore();
   const navigate = useNavigate();
+
+  const [isExtraSettingsOpen, setIsExtraSettingsOpen] = useState(false);
 
   // Flip countdown timer simulation
   const [timeLeft, setTimeLeft] = useState({
@@ -65,7 +69,13 @@ export const DashboardPage: React.FC = () => {
     { label: 'CERTIFICATE', sub: 'प्योरिटी सर्टिफिकेट', icon: Award, color: 'bg-amber-600', link: '/certificates' },
     { label: 'KHAR / MEL', sub: 'खार / मेल कैलकुलेटर', icon: FlaskConical, color: 'bg-teal-600', link: '/khar-mel' },
     { label: 'TOUCH FORM', sub: 'टंच टेस्टिंग रिपोर्ट', icon: FileCheck2, color: 'bg-indigo-600', link: '/touch-form' },
-    { label: 'SETTINGS', sub: 'सॉफ्टवेयर सेटिंग्स', icon: Settings, color: 'bg-slate-700', link: '/settings/shop' },
+    {
+      label: 'SETTINGS',
+      sub: 'एक्स्ट्रा सेटिंग्स',
+      icon: SlidersHorizontal,
+      color: 'bg-slate-700',
+      action: () => setIsExtraSettingsOpen(true),
+    },
     {
       label: 'LOGOUT',
       sub: 'लॉगआउट',
@@ -186,14 +196,35 @@ export const DashboardPage: React.FC = () => {
       {/* 4. General Settings Grid */}
       <div>
         <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
-          General Settings & Software Hub
+          General Settings & Software Hub (सॉफ्टवेयर सेटिंग्स)
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {/* Extra Settings Button */}
+          <button
+            onClick={() => setIsExtraSettingsOpen(true)}
+            className="p-3.5 rounded-xl bg-white border-2 border-brand-maroon/20 hover:border-brand-maroon hover:shadow-md transition-all text-left flex items-start space-x-3 group relative overflow-hidden"
+          >
+            <div className="p-2.5 rounded-lg bg-red-100 text-brand-maroon group-hover:scale-105 transition-transform shrink-0">
+              <SlidersHorizontal className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-1.5">
+                <h4 className="text-xs font-bold text-slate-800">Extra Settings</h4>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-brand-maroon text-white">
+                  मुख्य
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Shop profile, thermal slip, calculation rules & print options
+              </p>
+            </div>
+          </button>
+
           <button
             onClick={openStockModal}
             className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-brand-gold hover:shadow-md transition-all text-left flex items-start space-x-3 group"
           >
-            <div className="p-2.5 rounded-lg bg-amber-100 text-amber-800 group-hover:scale-105 transition-transform">
+            <div className="p-2.5 rounded-lg bg-amber-100 text-amber-800 group-hover:scale-105 transition-transform shrink-0">
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
@@ -206,7 +237,7 @@ export const DashboardPage: React.FC = () => {
             to="/customers"
             className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-brand-maroon hover:shadow-md transition-all text-left flex items-start space-x-3 group"
           >
-            <div className="p-2.5 rounded-lg bg-rose-100 text-brand-maroon group-hover:scale-105 transition-transform">
+            <div className="p-2.5 rounded-lg bg-rose-100 text-brand-maroon group-hover:scale-105 transition-transform shrink-0">
               <Shield className="h-5 w-5" />
             </div>
             <div>
@@ -219,7 +250,7 @@ export const DashboardPage: React.FC = () => {
             onClick={openBhavcutModal}
             className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-brand-blue hover:shadow-md transition-all text-left flex items-start space-x-3 group"
           >
-            <div className="p-2.5 rounded-lg bg-blue-100 text-brand-blue group-hover:scale-105 transition-transform">
+            <div className="p-2.5 rounded-lg bg-blue-100 text-brand-blue group-hover:scale-105 transition-transform shrink-0">
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
@@ -228,8 +259,44 @@ export const DashboardPage: React.FC = () => {
             </div>
           </button>
 
+          <button
+            onClick={() => setIsExtraSettingsOpen(true)}
+            className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all text-left flex items-start space-x-3 group"
+          >
+            <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-700 group-hover:scale-105 transition-transform shrink-0">
+              <MessageSquare className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-800">WhatsApp Settings</h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">Automated messaging & PDF delivery</p>
+            </div>
+          </button>
+
           <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-left flex items-start space-x-3">
-            <div className="p-2.5 rounded-lg bg-slate-100 text-slate-700">
+            <div className="p-2.5 rounded-lg bg-indigo-100 text-indigo-700 shrink-0">
+              <CreditCard className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-800">License & Renewal</h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">{timeLeft.days} days active validity</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsExtraSettingsOpen(true)}
+            className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md transition-all text-left flex items-start space-x-3 group"
+          >
+            <div className="p-2.5 rounded-lg bg-slate-100 text-slate-700 group-hover:scale-105 transition-transform shrink-0">
+              <KeyRound className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-800">Password Change</h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">Update PIN & security credentials</p>
+            </div>
+          </button>
+
+          <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-left flex items-start space-x-3">
+            <div className="p-2.5 rounded-lg bg-slate-100 text-slate-700 shrink-0">
               <Smartphone className="h-5 w-5" />
             </div>
             <div>
@@ -239,6 +306,12 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Extra Settings Modal */}
+      <ExtraSettingsModal
+        isOpen={isExtraSettingsOpen}
+        onClose={() => setIsExtraSettingsOpen(false)}
+      />
     </div>
   );
 };
