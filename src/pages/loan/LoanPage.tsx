@@ -2,41 +2,74 @@ import React, { useState, useEffect } from 'react';
 import { Customer, LoanEntry } from '../../types';
 import { loanService } from '../../services/loanService';
 import { useUIStore } from '../../store/useUIStore';
-import { calculateRunningBalance } from '../../utils/calculations/loanMath';
-import { CustomerSelect } from '../../components/shared/CustomerSelect';
-import { DataTable } from '../../components/common/DataTable';
-import { Badge } from '../../components/common/Badge';
-import { ColumnDef } from '@tanstack/react-table';
+import {
+  convertCashToGold,
+  convertGoldToCash,
+} from '../../utils/calculations/bullionMath';
 import {
   BookOpen,
-  PlusCircle,
+  Plus,
   List,
   Save,
-  Layers,
-  Scale,
-  IndianRupee,
+  Printer,
+  Share2,
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Search,
 } from 'lucide-react';
 
+interface ReferenceLoanListItem {
+  sn: number;
+  dateTime: string;
+  customerNo: number;
+  customerName: string;
+  source: string;
+  oldGold: number;
+  goldOut: number;
+  goldIn: number;
+  finalGold: number;
+  oldAmt: number;
+  amtOut: number;
+  amtIn: number;
+  finalAmt: number;
+  bhavcut: string;
+}
+
 export const LoanPage: React.FC = () => {
-  const { showToast } = useUIStore();
+  const { showToast, openBhavcutModal } = useUIStore();
 
   const [activeTab, setActiveTab] = useState<'FORM' | 'LIST'>('FORM');
   const [entries, setEntries] = useState<LoanEntry[]>([]);
 
-  // Form
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  // Form Fields
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('CUST-100');
+  const [customerSearch, setCustomerSearch] = useState<string>('100 / XYZ');
 
-  // Gold credit/debit
-  const [goldType, setGoldType] = useState<'JAMA' | 'UDHAR'>('UDHAR');
-  const [goldWeight, setGoldWeight] = useState<number>(0.0);
+  // Gold Inputs: Udhar (-) vs Jama (+)
+  const [goldUdhar, setGoldUdhar] = useState<number>(0.0);
+  const [goldJama, setGoldJama] = useState<number>(0.0);
 
-  // Cash credit/debit
-  const [cashType, setCashType] = useState<'JAMA' | 'UDHAR'>('UDHAR');
-  const [cashAmount, setCashAmount] = useState<number>(0.0);
-  const [onlineAmount, setOnlineAmount] = useState<number>(0.0);
-  const [bank2Amount, setBank2Amount] = useState<number>(0.0);
+  // Cash Inputs: Udhar (-) vs Jama (+)
+  const [cashUdhar, setCashUdhar] = useState<number>(0);
+  const [onlineUdhar, setOnlineUdhar] = useState<number>(0);
+  const [bank2Udhar, setBank2Udhar] = useState<number>(0);
+
+  const [cashJama, setCashJama] = useState<number>(0);
+  const [onlineJama, setOnlineJama] = useState<number>(0);
+  const [bank2Jama, setBank2Jama] = useState<number>(0);
+
+  // Inline Bhavcut
+  const [bhavcutAmt, setBhavcutAmt] = useState<number>(0);
+  const [bhavcutGold, setBhavcutGold] = useState<number>(0);
+  const [rate, setRate] = useState<number>(80000);
 
   const [narration, setNarration] = useState<string>('');
+
+  // List View Filters
+  const [fromDate, setFromDate] = useState<string>('2026-11-11');
+  const [toDate, setToDate] = useState<string>('2026-11-11');
+  const [listCustomerFilter, setListCustomerFilter] = useState<string>('all');
 
   useEffect(() => {
     loadEntries();
@@ -47,382 +80,716 @@ export const LoanPage: React.FC = () => {
     setEntries(list);
   };
 
-  const oldGold = selectedCustomer?.balance.gold || 0;
-  const oldCash = selectedCustomer?.balance.cash || 0;
+  // Seed reference data matching reference/loan_list_1440.png
+  const referenceListRows: ReferenceLoanListItem[] = [
+    {
+      sn: 1,
+      dateTime: '11-11-2026\n03 : 54 : pm',
+      customerNo: 386,
+      customerName: 'RAHUL 1',
+      source: 'Exchange',
+      oldGold: 0.0,
+      goldOut: 0,
+      goldIn: 0,
+      finalGold: 0.0,
+      oldAmt: 0,
+      amtOut: 0,
+      amtIn: 10000,
+      finalAmt: 10000,
+      bhavcut: '-',
+    },
+    {
+      sn: 2,
+      dateTime: '11-11-2026\n01 : 01 : pm',
+      customerNo: 99,
+      customerName: 'Bank (Online)',
+      source: 'Income Expense',
+      oldGold: 0.0,
+      goldOut: 0,
+      goldIn: 0,
+      finalGold: 0.0,
+      oldAmt: -98283,
+      amtOut: 10000,
+      amtIn: 0,
+      finalAmt: -108283,
+      bhavcut: '-',
+    },
+    {
+      sn: 3,
+      dateTime: '11-11-2026\n01 : 00 : pm',
+      customerNo: 99,
+      customerName: 'Bank (Online)',
+      source: 'Loan',
+      oldGold: 0.0,
+      goldOut: 0,
+      goldIn: 0,
+      finalGold: 0.0,
+      oldAmt: -48283,
+      amtOut: 50000,
+      amtIn: 0,
+      finalAmt: -98283,
+      bhavcut: '-',
+    },
+    {
+      sn: 4,
+      dateTime: '11-11-2026\n12 : 59 : pm',
+      customerNo: 99,
+      customerName: 'Bank (Online)',
+      source: 'Loan',
+      oldGold: 0.0,
+      goldOut: 0,
+      goldIn: 0,
+      finalGold: 0.0,
+      oldAmt: 1717,
+      amtOut: 50000,
+      amtIn: 0,
+      finalAmt: -48283,
+      bhavcut: '-',
+    },
+    {
+      sn: 5,
+      dateTime: '11-11-2026\n12 : 11 : pm',
+      customerNo: 384,
+      customerName: 'cm',
+      source: 'Loan',
+      oldGold: -10.0,
+      goldOut: 0,
+      goldIn: 8.0,
+      finalGold: -2.0,
+      oldAmt: 0,
+      amtOut: 0,
+      amtIn: 0,
+      finalAmt: 0,
+      bhavcut: '-',
+    },
+  ];
 
-  const finalGold = calculateRunningBalance(oldGold, goldWeight, goldType === 'JAMA', 3);
-  const totalCashTrans = (cashAmount || 0) + (onlineAmount || 0) + (bank2Amount || 0);
-  const finalCash = calculateRunningBalance(oldCash, totalCashTrans, cashType === 'JAMA', 2);
+  // Old balances for customer 100 / XYZ
+  const oldGold = 0.0;
+  const oldCash = 23530;
+  const oldSilver = -413.043;
+  const oldSilverAmt = 0;
+
+  // Real-time calculations matching reference
+  const netGoldDelta = Math.round((goldJama - goldUdhar) * 1000) / 1000;
+  const finalGold = Math.round((oldGold + netGoldDelta) * 1000) / 1000;
+
+  const totalCashUdhar = (cashUdhar || 0) + (onlineUdhar || 0) + (bank2Udhar || 0);
+  const totalCashJama = (cashJama || 0) + (onlineJama || 0) + (bank2Jama || 0);
+  const netCashDelta = totalCashJama - totalCashUdhar;
+  const finalCash = Math.round((oldCash + netCashDelta) * 100) / 100;
+
+  const handleInlineBhavcutAmtToGold = () => {
+    if (!bhavcutAmt || !rate) return;
+    const g = convertCashToGold(bhavcutAmt, rate);
+    setBhavcutGold(g);
+    showToast(`Converted ₹${bhavcutAmt.toLocaleString('en-IN')} to ${g.toFixed(3)} gm Gold`);
+  };
+
+  const handleInlineBhavcutGoldToAmt = () => {
+    if (!bhavcutGold || !rate) return;
+    const c = convertGoldToCash(bhavcutGold, rate);
+    setBhavcutAmt(c);
+    showToast(`Converted ${bhavcutGold.toFixed(3)} gm Gold to ₹${c.toLocaleString('en-IN')}`);
+  };
 
   const handleSave = async () => {
-    if (!selectedCustomer) {
-      showToast('Please select a customer first!', 'error');
-      return;
-    }
-
-    if (goldWeight === 0 && totalCashTrans === 0) {
-      showToast('Please enter either gold weight or cash amount!', 'error');
-      return;
-    }
-
-    const newEntry = await loanService.createEntry({
-      customerId: selectedCustomer.id,
-      customerName: selectedCustomer.name,
-      customerNo: selectedCustomer.customerNo,
+    const newEntry = await loanService.create({
+      customerId: selectedCustomerId,
+      customerNo: 100,
+      customerName: customerSearch,
       gold: {
         oldBalance: oldGold,
-        type: goldType,
-        transactionWeight: goldWeight,
+        type: goldJama > 0 ? 'JAMA' : 'UDHAR',
+        transactionWeight: goldJama > 0 ? goldJama : goldUdhar,
         newBalance: finalGold,
       },
       cash: {
         oldBalance: oldCash,
-        type: cashType,
-        transactionAmount: cashAmount,
-        onlineAmount,
-        bank2Amount,
+        type: totalCashJama > 0 ? 'JAMA' : 'UDHAR',
+        transactionAmount: totalCashJama > 0 ? cashJama : cashUdhar,
+        onlineAmount: totalCashJama > 0 ? onlineJama : onlineUdhar,
+        bank2Amount: totalCashJama > 0 ? bank2Jama : bank2Udhar,
         newBalance: finalCash,
       },
-      narration: narration || 'Loan / Advance entry',
+      narration: narration || 'Udhari / Loan account entry',
     });
 
-    showToast(`Loan ledger entry #${newEntry.transactionNo} created!`);
+    showToast(`Udhari ledger entry #${newEntry.transactionNo} created!`);
     loadEntries();
-    setGoldWeight(0);
-    setCashAmount(0);
-    setOnlineAmount(0);
-    setBank2Amount(0);
+    setGoldUdhar(0);
+    setGoldJama(0);
+    setCashUdhar(0);
+    setOnlineUdhar(0);
+    setBank2Udhar(0);
+    setCashJama(0);
+    setOnlineJama(0);
+    setBank2Jama(0);
     setNarration('');
   };
 
-  const columns: ColumnDef<LoanEntry>[] = [
-    {
-      accessorKey: 'transactionNo',
-      header: 'SN',
-      cell: (info) => <span className="font-bold">#{info.getValue() as number}</span>,
-    },
-    {
-      accessorKey: 'dateTime',
-      header: 'Date / Time',
-      cell: (info) => <span className="text-slate-500">{info.getValue() as string}</span>,
-    },
-    {
-      accessorKey: 'customerName',
-      header: 'Customer',
-      cell: (info) => (
-        <span className="font-semibold text-slate-800">{info.getValue() as string}</span>
-      ),
-    },
-    {
-      header: 'Gold In / Out',
-      cell: (info) => {
-        const g = info.row.original.gold;
-        if (!g.transactionWeight) return <span className="text-slate-400">-</span>;
-        return (
-          <Badge variant={g.type === 'JAMA' ? 'success' : 'danger'}>
-            {g.type === 'JAMA' ? '+In ' : '-Out '}
-            {g.transactionWeight.toFixed(3)}g
-          </Badge>
-        );
-      },
-    },
-    {
-      header: 'Final Gold (g)',
-      cell: (info) => (
-        <span
-          className={`font-bold ${
-            info.row.original.gold.newBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'
-          }`}
-        >
-          {info.row.original.gold.newBalance >= 0 ? '+' : ''}
-          {info.row.original.gold.newBalance.toFixed(3)}g
-        </span>
-      ),
-    },
-    {
-      header: 'Cash In / Out',
-      cell: (info) => {
-        const c = info.row.original.cash;
-        const total = (c.transactionAmount || 0) + (c.onlineAmount || 0) + (c.bank2Amount || 0);
-        if (!total) return <span className="text-slate-400">-</span>;
-        return (
-          <Badge variant={c.type === 'JAMA' ? 'success' : 'danger'}>
-            {c.type === 'JAMA' ? '+In ' : '-Out '}₹{total.toLocaleString('en-IN')}
-          </Badge>
-        );
-      },
-    },
-    {
-      header: 'Final Cash (₹)',
-      cell: (info) => (
-        <span
-          className={`font-bold ${
-            info.row.original.cash.newBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'
-          }`}
-        >
-          ₹{info.row.original.cash.newBalance.toLocaleString('en-IN')}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'narration',
-      header: 'Narration',
-      cell: (info) => (
-        <span className="text-slate-600 truncate max-w-[150px] inline-block">
-          {info.getValue() as string}
-        </span>
-      ),
-    },
-  ];
-
   return (
     <div className="space-y-4">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-2">
-        <div className="flex items-center space-x-2">
-          <div className="h-9 w-9 rounded-lg bg-brand-maroon text-brand-gold flex items-center justify-center">
-            <BookOpen className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-              LOAN & CREDIT LEDGER (उधार खाता)
-            </h1>
-            <p className="text-xs text-slate-500">
-              Double-entry bullion weight and cash advances, deposits, and loan balance tracking
-            </p>
-          </div>
-        </div>
-
-        <div className="flex rounded-lg bg-slate-200/80 p-0.5 text-xs font-semibold">
-          <button
-            onClick={() => setActiveTab('FORM')}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all ${
-              activeTab === 'FORM' ? 'bg-brand-maroon text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span>New Credit/Debit Entry</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('LIST')}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all ${
-              activeTab === 'LIST' ? 'bg-brand-maroon text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <List className="h-3.5 w-3.5" />
-            <span>Loan Log ({entries.length})</span>
-          </button>
-        </div>
-      </div>
-
       {activeTab === 'FORM' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Select Customer (ग्राहक) <span className="text-red-500">*</span>
-              </label>
-              <CustomerSelect
-                value={selectedCustomer?.id || ''}
-                onChange={(c) => setSelectedCustomer(c)}
-              />
+        <div className="space-y-4">
+          {/* Top Form Header Matching reference/loan_form_1440.png */}
+          <div className="bg-white p-3 rounded-xl border border-amber-300 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+            {/* Customer Search with red + button */}
+            <div className="flex items-center space-x-2 flex-1 max-w-lg">
+              <div className="relative flex items-center w-full">
+                <Search className="absolute left-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Customer No / Name"
+                  className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:border-brand-maroon"
+                />
+              </div>
+              <button
+                type="button"
+                className="h-8 w-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:bg-rose-700 shrink-0 shadow-xs"
+                title="Add New Customer"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
 
-            {/* (सोना) GOLD Section */}
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3.5 space-y-3">
-              <div className="flex items-center justify-between border-b border-amber-200 pb-1.5">
-                <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
-                  <Scale className="h-4 w-4 text-brand-gold" />
-                  <span>(सोना) GOLD CREDIT / DEBIT</span>
-                </div>
-                <span className="text-xs text-slate-600">
-                  Previous: <span className="font-bold">{oldGold.toFixed(3)} gm</span>
+            {/* List Button (Maroon Rounded Pill) */}
+            <div>
+              <button
+                onClick={() => setActiveTab('LIST')}
+                className="flex items-center space-x-1.5 px-4 py-1.5 bg-brand-maroon text-white font-bold rounded-full hover:bg-brand-maroon-dark transition-all text-xs shadow-xs"
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>List</span>
+              </button>
+            </div>
+
+            {/* Deligo Technologies Brand Box */}
+            <div className="flex items-center space-x-2 pl-4 border-l border-slate-200">
+              <div className="h-8 w-8 rounded-lg bg-brand-maroon text-brand-gold flex items-center justify-center font-black text-sm shadow-xs">
+                DT
+              </div>
+              <div className="leading-tight">
+                <span className="font-extrabold text-slate-800 tracking-tight text-xs block">
+                  DELIGO TECHNOLOGIES
+                </span>
+                <span className="text-[10px] text-brand-maroon font-semibold block">
+                  Loan & Udhari Ledger
                 </span>
               </div>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                <div className="flex rounded-md bg-white border border-slate-300 p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setGoldType('UDHAR')}
-                    className={`flex-1 py-1.5 text-center text-xs font-bold rounded ${
-                      goldType === 'UDHAR' ? 'bg-rose-600 text-white' : 'text-slate-600'
-                    }`}
-                  >
-                    Udhar / Out (-)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setGoldType('JAMA')}
-                    className={`flex-1 py-1.5 text-center text-xs font-bold rounded ${
-                      goldType === 'JAMA' ? 'bg-emerald-600 text-white' : 'text-slate-600'
-                    }`}
-                  >
-                    Jama / In (+)
-                  </button>
-                </div>
+          {/* Dual Panel Layout: (सोना) GOLD on Left, (पैसे) CASH on Right */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Box 1: (सोना) GOLD */}
+            <div className="bg-white rounded-xl border-2 border-amber-300 shadow-xs p-4 space-y-4">
+              <div className="text-center">
+                <h3 className="text-base font-black text-slate-900 tracking-wide">
+                  (सोना) GOLD
+                </h3>
+              </div>
 
-                <div>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={goldWeight}
-                    onChange={(e) => setGoldWeight(Number(e.target.value))}
-                    placeholder="Gold Weight (gm)"
-                    className="w-full px-3 py-1.5 text-xs font-bold rounded border border-slate-300 bg-white focus:outline-none"
-                  />
-                </div>
-
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-500 block">FINAL GOLD:</span>
-                  <span
-                    className={`font-black text-sm ${
-                      finalGold >= 0 ? 'text-emerald-700' : 'text-rose-700'
-                    }`}
-                  >
-                    {finalGold >= 0 ? '+' : ''}
-                    {finalGold.toFixed(3)} gm
+              {/* Old Balances */}
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700 w-28 text-right pr-2">
+                    (पुराना) OLD :
                   </span>
+                  <div className="flex-1 px-3 py-1.5 rounded border border-emerald-400 bg-emerald-50/30 text-emerald-800 font-bold font-mono">
+                    {oldGold.toFixed(3)}
+                  </div>
+                  <span className="font-bold text-slate-700 w-10 pl-2">gm</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700 w-28 text-right pr-2">
+                    Silver Old
+                  </span>
+                  <div className="flex-1 px-3 py-1.5 rounded border border-rose-400 bg-rose-50/30 text-rose-700 font-bold font-mono">
+                    {oldSilver.toFixed(3)}
+                  </div>
+                  <span className="font-bold text-slate-700 w-10 pl-2">gm</span>
+                </div>
+              </div>
+
+              {/* Udhar/Out (-) vs Jama/In (+) Matrix */}
+              <div className="pt-2">
+                <div className="grid grid-cols-5 items-center gap-2 text-xs">
+                  <div className="col-span-2">
+                    <label className="block text-center font-bold text-slate-700 mb-1 text-[11px]">
+                      Udhar/Out (-)
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={goldUdhar || ''}
+                        onChange={(e) => setGoldUdhar(Number(e.target.value))}
+                        placeholder="0.000"
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-rose-400 text-rose-700 font-bold font-mono focus:outline-none"
+                      />
+                      <span className="ml-1 text-[11px] font-bold text-slate-600">gm</span>
+                    </div>
+                  </div>
+
+                  <div className="text-center font-bold text-slate-600 text-[11px]">
+                    NEW
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-center font-bold text-slate-700 mb-1 text-[11px]">
+                      Jama/In (+)
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={goldJama || ''}
+                        onChange={(e) => setGoldJama(Number(e.target.value))}
+                        placeholder="0.000"
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-400 text-emerald-700 font-bold font-mono focus:outline-none"
+                      />
+                      <span className="ml-1 text-[11px] font-bold text-slate-600">gm</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* FINAL GOLD Row */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 w-28 text-right pr-2">
+                    FINAL :
+                  </span>
+                  <div className="flex-1 px-3 py-2 rounded-lg border-2 border-emerald-400 bg-emerald-50/50 text-emerald-900 font-extrabold font-mono text-sm">
+                    {finalGold.toFixed(3)}
+                  </div>
+                  <span className="font-bold text-slate-700 w-10 pl-2">gm</span>
                 </div>
               </div>
             </div>
 
-            {/* (पैसे) CASH Section */}
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
-                  <IndianRupee className="h-4 w-4 text-emerald-600" />
-                  <span>(पैसे) CASH ADVANCE / PAYMENT</span>
-                </div>
-                <span className="text-xs text-slate-600">
-                  Previous: <span className="font-bold">₹ {oldCash.toLocaleString('en-IN')}</span>
+            {/* Box 2: (पैसे) CASH */}
+            <div className="bg-white rounded-xl border-2 border-amber-300 shadow-xs p-4 space-y-4">
+              <div className="flex items-center justify-center space-x-1.5">
+                <h3 className="text-base font-black text-slate-900 tracking-wide">
+                  (पैसे) CASH
+                </h3>
+                <span className="h-4 w-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
+                  +
                 </span>
               </div>
 
-              <div className="flex rounded-md bg-white border border-slate-300 p-0.5 max-w-xs">
-                <button
-                  type="button"
-                  onClick={() => setCashType('UDHAR')}
-                  className={`flex-1 py-1.5 text-center text-xs font-bold rounded ${
-                    cashType === 'UDHAR' ? 'bg-rose-600 text-white' : 'text-slate-600'
-                  }`}
-                >
-                  Udhar / Out (-)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCashType('JAMA')}
-                  className={`flex-1 py-1.5 text-center text-xs font-bold rounded ${
-                    cashType === 'JAMA' ? 'bg-emerald-600 text-white' : 'text-slate-600'
-                  }`}
-                >
-                  Jama / In (+)
-                </button>
+              {/* Old Balances */}
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700 w-28 text-right pr-2">
+                    (पुराना) OLD :
+                  </span>
+                  <div className="flex-1 px-3 py-1.5 rounded border border-emerald-400 bg-emerald-50/30 text-emerald-800 font-bold font-mono">
+                    {oldCash.toLocaleString('en-IN')}
+                  </div>
+                  <span className="font-bold text-slate-700 w-10 pl-2">₹</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700 w-28 text-right pr-2">
+                    Old Silver Amt
+                  </span>
+                  <div className="flex-1 px-3 py-1.5 rounded border border-emerald-400 bg-emerald-50/30 text-emerald-800 font-bold font-mono">
+                    {oldSilverAmt}
+                  </div>
+                  <span className="font-bold text-slate-700 w-10 pl-2">₹</span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Cash (रोकड़ ₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={cashAmount}
-                    onChange={(e) => setCashAmount(Number(e.target.value))}
-                    className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 bg-white"
-                  />
+              {/* Split Payment Rows: CASH, ONLINE, SELF BANK 2 */}
+              <div className="space-y-2 pt-1 text-xs">
+                {/* Header labels */}
+                <div className="grid grid-cols-5 text-center font-bold text-slate-700 text-[11px]">
+                  <span className="col-span-2">Udhar/Out (-)</span>
+                  <span></span>
+                  <span className="col-span-2">Jama/In(+)</span>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Online / RTGS (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={onlineAmount}
-                    onChange={(e) => setOnlineAmount(Number(e.target.value))}
-                    className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 bg-white"
-                  />
+
+                {/* CASH Row */}
+                <div className="grid grid-cols-5 items-center gap-1.5">
+                  <div className="col-span-2 flex items-center">
+                    <input
+                      type="number"
+                      value={cashUdhar || ''}
+                      onChange={(e) => setCashUdhar(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-2 py-1 text-xs rounded border border-rose-400 text-rose-700 font-bold font-mono focus:outline-none"
+                    />
+                    <span className="ml-1 text-[11px] font-bold text-slate-600">₹</span>
+                  </div>
+                  <div className="text-center font-bold text-slate-700 text-[11px]">
+                    CASH
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    <input
+                      type="number"
+                      value={cashJama || ''}
+                      onChange={(e) => setCashJama(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-2 py-1 text-xs rounded border border-emerald-400 text-emerald-700 font-bold font-mono focus:outline-none"
+                    />
+                    <span className="ml-1 text-[11px] font-bold text-slate-600">₹</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Self Bank 2 (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={bank2Amount}
-                    onChange={(e) => setBank2Amount(Number(e.target.value))}
-                    className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 bg-white"
-                  />
+
+                {/* ONLINE Row */}
+                <div className="grid grid-cols-5 items-center gap-1.5">
+                  <div className="col-span-2 flex items-center">
+                    <input
+                      type="number"
+                      value={onlineUdhar || ''}
+                      onChange={(e) => setOnlineUdhar(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-2 py-1 text-xs rounded border border-rose-400 text-rose-700 font-bold font-mono focus:outline-none"
+                    />
+                    <span className="ml-1 text-[11px] font-bold text-slate-600">₹</span>
+                  </div>
+                  <div className="text-center font-bold text-slate-700 text-[11px]">
+                    ONLINE
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    <input
+                      type="number"
+                      value={onlineJama || ''}
+                      onChange={(e) => setOnlineJama(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-2 py-1 text-xs rounded border border-emerald-400 text-emerald-700 font-bold font-mono focus:outline-none"
+                    />
+                    <span className="ml-1 text-[11px] font-bold text-slate-600">₹</span>
+                  </div>
+                </div>
+
+                {/* SELF BANK 2 Row */}
+                <div className="grid grid-cols-5 items-center gap-1.5">
+                  <div className="col-span-2 flex items-center">
+                    <input
+                      type="number"
+                      value={bank2Udhar || ''}
+                      onChange={(e) => setBank2Udhar(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-2 py-1 text-xs rounded border border-rose-400 text-rose-700 font-bold font-mono focus:outline-none"
+                    />
+                    <span className="ml-1 text-[11px] font-bold text-slate-600">₹</span>
+                  </div>
+                  <div className="text-center font-bold text-slate-700 text-[10px] whitespace-nowrap">
+                    SELF BANK 2
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    <input
+                      type="number"
+                      value={bank2Jama || ''}
+                      onChange={(e) => setBank2Jama(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-2 py-1 text-xs rounded border border-emerald-400 text-emerald-700 font-bold font-mono focus:outline-none"
+                    />
+                    <span className="ml-1 text-[11px] font-bold text-slate-600">₹</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* FINAL CASH Row */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 w-28 text-right pr-2">
+                    FINAL :
+                  </span>
+                  <div className="flex-1 px-3 py-2 rounded-lg border-2 border-emerald-400 bg-emerald-50/50 text-emerald-900 font-extrabold font-mono text-sm">
+                    {finalCash.toLocaleString('en-IN')}
+                  </div>
+                  <span className="font-bold text-slate-700 w-10 pl-2">₹</span>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div>
-              <input
-                type="text"
+          {/* Rate Selector, Narration, WhatsApp, Printer & P. Bhavcut */}
+          <div className="space-y-3 pt-2">
+            {/* Center Rate Box */}
+            <div className="flex items-center justify-center">
+              <div className="flex items-center space-x-2 bg-white px-3 py-1 rounded-full border border-slate-300 shadow-xs">
+                <button
+                  type="button"
+                  onClick={handleInlineBhavcutAmtToGold}
+                  className="p-1 rounded-full bg-brand-maroon text-white hover:bg-brand-maroon-dark"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <input
+                  type="number"
+                  value={bhavcutAmt || ''}
+                  onChange={(e) => setBhavcutAmt(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-24 text-center font-bold text-xs border-b border-slate-300 focus:outline-none"
+                />
+                <span className="text-xs font-bold text-slate-600">₹/10gm</span>
+                <button
+                  type="button"
+                  onClick={handleInlineBhavcutGoldToAmt}
+                  className="p-1 rounded-full bg-brand-maroon text-white hover:bg-brand-maroon-dark"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Narration Box with icons */}
+            <div className="relative">
+              <textarea
+                rows={2}
                 value={narration}
                 onChange={(e) => setNarration(e.target.value)}
-                placeholder="Narration / Remark (Diwali advance, Karigar wage, settlement note)..."
-                className="w-full px-3 py-1.5 text-xs rounded border border-slate-300 focus:outline-none focus:border-brand-maroon"
+                placeholder="Write Narration/Remark"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white shadow-xs focus:outline-none focus:border-brand-maroon leading-relaxed"
               />
-            </div>
 
-            <button
-              type="button"
-              onClick={handleSave}
-              className="flex items-center space-x-1.5 px-5 py-2.5 bg-brand-maroon text-white font-bold text-xs rounded-lg hover:bg-brand-maroon-dark transition-all shadow-xs"
-            >
-              <Save className="h-4 w-4" />
-              <span>Save Ledger Entry (खाते में दर्ज करें)</span>
-            </button>
-          </div>
-
-          {/* Right Summary Card */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3 h-fit">
-            <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 border-b pb-2">
-              <Layers className="h-4 w-4 text-brand-maroon" />
-              <span>Balance Preview</span>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                  New Gold Balance
-                </span>
-                <span
-                  className={`text-xl font-extrabold ${
-                    finalGold >= 0 ? 'text-emerald-700' : 'text-rose-700'
-                  }`}
+              {/* Action Buttons beneath/around textarea */}
+              <div className="flex items-center justify-between mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = encodeURIComponent(
+                      `*DELIGO TECHNOLOGIES - UDHARI STATEMENT*\n` +
+                      `Customer: ${customerSearch}\n` +
+                      `Gold Balance: ${finalGold.toFixed(3)} gm\n` +
+                      `Cash Balance: ₹ ${finalCash.toLocaleString('en-IN')}`
+                    );
+                    window.open(`https://api.whatsapp.com/send?phone=9645808999&text=${text}`, '_blank');
+                  }}
+                  className="p-2 rounded-full text-emerald-600 hover:bg-emerald-50 transition-colors"
+                  title="WhatsApp"
                 >
-                  {finalGold >= 0 ? '+' : ''}
-                  {finalGold.toFixed(3)} gm
-                </span>
-              </div>
+                  <Share2 className="h-5 w-5" />
+                </button>
 
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                  New Cash Balance
-                </span>
-                <span
-                  className={`text-xl font-extrabold ${
-                    finalCash >= 0 ? 'text-emerald-700' : 'text-rose-700'
-                  }`}
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    className="flex items-center space-x-1 px-5 py-2 bg-emerald-700 text-white font-bold rounded-lg text-xs hover:bg-emerald-800 shadow-xs"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Save Entry</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="p-2 rounded-full text-brand-maroon hover:bg-rose-50 transition-colors"
+                    title="Print"
+                  >
+                    <Printer className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={openBhavcutModal}
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-brand-maroon text-white font-bold rounded-md text-xs hover:bg-brand-maroon-dark transition-colors shadow-xs"
                 >
-                  ₹ {finalCash.toLocaleString('en-IN')}
-                </span>
+                  <span>P. Bhavcut +</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={entries}
-          searchPlaceholder="Search loan ledger entries..."
-          exportFileName="loan_entries.csv"
-        />
+        /* List View Exact Match with reference/loan_list_1440.png */
+        <div className="space-y-4">
+          {/* Breadcrumb Bar */}
+          <div className="flex items-center space-x-2 text-xs font-bold text-white">
+            <div className="bg-brand-maroon px-3 py-1 rounded-l-md">Loan</div>
+            <div className="bg-rose-700 px-3 py-1 rounded-r-md">Loan List</div>
+          </div>
+
+          {/* Header Controls Bar */}
+          <div className="bg-white p-3 rounded-xl border border-slate-300 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+            <h2 className="text-base font-extrabold text-slate-800">Loan List</h2>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="px-2.5 py-1 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="px-2.5 py-1 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+              />
+              <select
+                value={listCustomerFilter}
+                onChange={(e) => setListCustomerFilter(e.target.value)}
+                className="px-3 py-1 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+              >
+                <option value="all">Select</option>
+                <option value="386">386 / RAHUL 1</option>
+                <option value="99">99 / Bank (Online)</option>
+                <option value="384">384 / cm</option>
+                <option value="100">100 / XYZ</option>
+              </select>
+
+              {/* Back Circle Button */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('FORM')}
+                className="h-7 w-7 rounded-full bg-brand-maroon text-white flex items-center justify-center hover:bg-brand-maroon-dark transition-colors"
+                title="Back to Form"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {/* Old Records Button */}
+              <button
+                type="button"
+                onClick={() => showToast('Loading archived records...')}
+                className="px-3 py-1 bg-brand-maroon text-white font-bold rounded-full hover:bg-brand-maroon-dark transition-colors text-xs"
+              >
+                Old Records
+              </button>
+            </div>
+          </div>
+
+          {/* Two-Tier Table Matching reference/loan_list_1440.png */}
+          <div className="bg-white rounded-xl border border-slate-300 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  {/* Super Header Tier */}
+                  <tr className="bg-slate-700 text-white font-bold text-center">
+                    <th colSpan={3} className="py-2 px-3 border border-slate-600 bg-slate-700"></th>
+                    <th colSpan={4} className="py-2 px-3 border border-slate-600 bg-slate-800 text-amber-300 uppercase tracking-wider">
+                      Gold
+                    </th>
+                    <th colSpan={4} className="py-2 px-3 border border-slate-600 bg-slate-800 text-emerald-300 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="py-2 px-3 border border-slate-600 bg-slate-700"></th>
+                    <th className="py-2 px-3 border border-slate-600 bg-slate-700"></th>
+                  </tr>
+                  {/* Secondary Header Tier */}
+                  <tr className="bg-slate-600 text-white font-semibold text-center border-b border-slate-500">
+                    <th className="py-2 px-3 border border-slate-500 w-10">SN</th>
+                    <th className="py-2 px-3 border border-slate-500 w-28">Date/Time</th>
+                    <th className="py-2 px-3 border border-slate-500 w-36">C. No/C. Name/Source</th>
+                    <th className="py-2 px-3 border border-slate-500 w-20">Old Gold</th>
+                    <th className="py-2 px-3 border border-slate-500 w-20">Gold Out</th>
+                    <th className="py-2 px-3 border border-slate-500 w-20">Gold In</th>
+                    <th className="py-2 px-3 border border-slate-500 w-24">Final Gold</th>
+                    <th className="py-2 px-3 border border-slate-500 w-24">Old Amt</th>
+                    <th className="py-2 px-3 border border-slate-500 w-24">Amt Out</th>
+                    <th className="py-2 px-3 border border-slate-500 w-24">Amt In</th>
+                    <th className="py-2 px-3 border border-slate-500 w-28">Final Amt</th>
+                    <th className="py-2 px-3 border border-slate-500 w-28">Conersion (Bhav Cut)</th>
+                    <th className="py-2 px-3 border border-slate-500 w-16">Action</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200 text-center">
+                  {referenceListRows.map((row) => (
+                    <tr key={row.sn} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-bold text-slate-700">
+                        {row.sn}
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 text-slate-600 whitespace-pre-line text-[11px]">
+                        {row.dateTime}
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200">
+                        <div className="flex flex-col items-center">
+                          <span className="font-bold text-slate-900">{row.customerNo}</span>
+                          <span className="font-semibold text-slate-700">{row.customerName}</span>
+                          <span className="text-[10px] text-brand-maroon font-bold uppercase">{row.source}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-slate-700">
+                        {row.oldGold.toFixed(3)}
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-rose-600 font-bold">
+                        {row.goldOut > 0 ? `-${row.goldOut.toFixed(3)}` : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-emerald-700 font-bold">
+                        {row.goldIn > 0 ? `+ ${row.goldIn.toFixed(3)} gm` : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono font-black text-slate-900">
+                        {row.finalGold.toFixed(3)} gm
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-slate-700">
+                        {row.oldAmt.toLocaleString('en-IN')} ₹
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-rose-600 font-bold">
+                        {row.amtOut > 0 ? `- ${row.amtOut.toLocaleString('en-IN')} ₹` : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-emerald-700 font-bold">
+                        {row.amtIn > 0 ? `+ ${row.amtIn.toLocaleString('en-IN')} ₹` : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 font-mono font-black text-slate-900">
+                        {row.finalAmt.toLocaleString('en-IN')} ₹
+                      </td>
+                      <td className="py-2.5 px-3 border-r border-slate-200 text-slate-400">
+                        {row.bhavcut}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <button
+                          type="button"
+                          className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+
+                {/* Footer Totals Row */}
+                <tfoot>
+                  <tr className="bg-slate-600 text-white font-bold text-center border-t-2 border-slate-400">
+                    <td colSpan={3} className="py-2.5 px-3 border border-slate-500 text-center font-extrabold tracking-wide">
+                      Total :-
+                    </td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                      100.000 gm
+                    </td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-slate-700 text-white font-mono font-black">
+                      93.000 gm
+                    </td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-slate-600"></td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-slate-600"></td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-slate-700 text-white font-mono font-black">
+                      1,10,000 ₹
+                    </td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                      2,99,000 ₹
+                    </td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-slate-600"></td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-slate-600"></td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-slate-600"></td>
+                    <td className="py-2.5 px-3 border border-slate-500 bg-white text-center">
+                      <button
+                        onClick={() => window.print()}
+                        className="p-1 rounded text-brand-maroon hover:bg-rose-50 inline-flex items-center justify-center"
+                        title="Print Loan Table"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 };
-

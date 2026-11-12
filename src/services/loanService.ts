@@ -48,5 +48,11 @@ export const loanService = {
 
     return newEntry;
   },
+
+  async create(
+    data: Omit<LoanEntry, 'id' | 'transactionNo' | 'dateTime'>
+  ): Promise<LoanEntry> {
+    return this.createEntry(data);
+  },
 };
 

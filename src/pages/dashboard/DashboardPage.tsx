@@ -63,6 +63,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   const quickPods = [
+    { label: 'UDHARI', sub: 'उधार / उधारी', icon: BookOpen, color: 'bg-emerald-700', link: '/udhari' },
     { label: 'TRAINING', sub: 'ट्रेनिंग वीडियो', icon: Video, color: 'bg-purple-600', link: '/training' },
     { label: 'WHATSAPP', sub: 'व्हाट्सएप सेटिंग', icon: MessageSquare, color: 'bg-emerald-600', link: '/settings/whatsapp' },
     { label: 'DAY BOOK', sub: 'दैनिक बहीखाता', icon: BookOpen, color: 'bg-blue-600', link: '/day-book' },
@@ -219,6 +220,25 @@ export const DashboardPage: React.FC = () => {
               </p>
             </div>
           </button>
+
+          {/* Udhari Module Card */}
+          <Link
+            to="/udhari"
+            className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all text-left flex items-start space-x-3 group"
+          >
+            <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-800 group-hover:scale-105 transition-transform shrink-0">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-1.5">
+                <h4 className="text-xs font-bold text-slate-800">Udhari & Credit Ledger</h4>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                  उधारी
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">Bullion & cash credit advances, deposits and customer balances</p>
+            </div>
+          </Link>
 
           <button
             onClick={openStockModal}

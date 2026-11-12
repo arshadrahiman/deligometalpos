@@ -3,20 +3,22 @@ import { Customer } from '../../types';
 import { customerService } from '../../services/customerService';
 import { useUIStore } from '../../store/useUIStore';
 import { DataTable } from '../../components/common/DataTable';
-import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   Users,
-  UserPlus,
-  Trash2,
-  Phone,
-  Building,
+  Plus,
   Save,
-  CheckCircle2,
+  Search,
+  Printer,
+  ChevronDown,
+  FileSpreadsheet,
+  MoreVertical,
+  Trash2,
 } from 'lucide-react';
 
 const INDIAN_STATES = [
+  'Select State',
   'Andaman and Nicobar Islands (35)',
   'Andhra Pradesh (37)',
   'Arunachal Pradesh (12)',
@@ -60,19 +62,25 @@ export const CustomerListPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Form State
+  // Search Filters
+  const [selectedCustFilter, setSelectedCustFilter] = useState('all');
+  const [mobileSearch, setMobileSearch] = useState('');
+
+  // Form State matching customer_add_1440.png
+  const [customerNo, setCustomerNo] = useState(387);
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [mobileSecondary, setMobileSecondary] = useState('');
-  const [shopName, setShopName] = useState('');
   const [category, setCategory] = useState<Customer['category']>('Jewelry Owner');
-  const [line1, setLine1] = useState('');
-  const [area, setArea] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('Madhya Pradesh (23)');
+  const [shopName, setShopName] = useState('');
+  const [shopAddress, setShopAddress] = useState('');
   const [gstNo, setGstNo] = useState('');
+  const [licenceNo, setLicenceNo] = useState('');
   const [panNo, setPanNo] = useState('');
   const [aadharNo, setAadharNo] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState('');
+  const [logo, setLogo] = useState('');
+  const [registrationNo, setRegistrationNo] = useState('');
+  const [stateName, setStateName] = useState('Madhya Pradesh (23)');
 
   useEffect(() => {
     loadCustomers();
@@ -81,12 +89,16 @@ export const CustomerListPage: React.FC = () => {
   const loadCustomers = async () => {
     const list = await customerService.getAll();
     setCustomers(list);
+    if (list.length > 0) {
+      const maxNo = Math.max(...list.map((c) => c.customerNo));
+      setCustomerNo(maxNo + 1);
+    }
   };
 
-  const handleCreateCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateCustomer = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!name.trim()) {
-      showToast('Customer Name is required!', 'error');
+      showToast('Customer / Shop Name is required!', 'error');
       return;
     }
     if (!mobile.trim() || mobile.length < 10) {
@@ -97,19 +109,19 @@ export const CustomerListPage: React.FC = () => {
     await customerService.create({
       name,
       mobile,
-      mobileSecondary,
       shopName,
       category,
       address: {
-        line1,
-        area,
-        city,
-        state,
+        line1: shopAddress,
+        city: shopAddress ? shopAddress.split('/')[0].trim() : '',
+        state: stateName,
       },
       taxDetails: {
         gstNo,
         panNo,
         aadharNo,
+        licenceNo,
+        registrationNo,
       },
       balance: {
         gold: 0,
@@ -125,14 +137,14 @@ export const CustomerListPage: React.FC = () => {
     // Reset Form
     setName('');
     setMobile('');
-    setMobileSecondary('');
     setShopName('');
-    setLine1('');
-    setArea('');
-    setCity('');
+    setShopAddress('');
     setGstNo('');
+    setLicenceNo('');
     setPanNo('');
     setAadharNo('');
+    setLogo('');
+    setRegistrationNo('');
   };
 
   const handleDelete = async (id: string, customerName: string) => {
@@ -143,255 +155,413 @@ export const CustomerListPage: React.FC = () => {
     }
   };
 
+  const filteredCustomers = customers.filter((c) => {
+    if (selectedCustFilter !== 'all' && String(c.customerNo) !== selectedCustFilter) {
+      return false;
+    }
+    if (mobileSearch && !c.mobile.includes(mobileSearch)) {
+      return false;
+    }
+    return true;
+  });
+
   const columns: ColumnDef<Customer>[] = [
     {
       accessorKey: 'customerNo',
       header: 'C No.',
-      cell: (info) => <span className="font-bold">#{info.getValue() as number}</span>,
+      cell: (info) => <span className="font-bold">{info.getValue() as number}</span>,
     },
     {
       accessorKey: 'name',
-      header: 'Customer Name',
+      header: 'Name',
       cell: (info) => (
-        <div className="flex flex-col">
-          <span className="font-bold text-slate-800">{info.getValue() as string}</span>
-          {info.row.original.shopName && (
-            <span className="text-[10px] text-slate-500 font-medium">
-              Shop: {info.row.original.shopName}
-            </span>
-          )}
-        </div>
+        <span className="font-bold text-slate-800">{info.getValue() as string}</span>
       ),
     },
     {
       accessorKey: 'mobile',
-      header: 'Mobile',
+      header: 'Mobile No.',
       cell: (info) => (
-        <span className="text-slate-600 font-medium">{info.getValue() as string}</span>
+        <span className="text-slate-600 font-mono text-[11px]">{info.getValue() as string}</span>
       ),
     },
     {
-      accessorKey: 'category',
-      header: 'Category',
-      cell: (info) => {
-        const cat = info.getValue() as string;
-        const variant =
-          cat === 'Karigar'
-            ? 'info'
-            : cat === 'Jewelry Owner'
-            ? 'gold'
-            : cat === 'Whole Seller'
-            ? 'success'
-            : 'default';
-        return <Badge variant={variant}>{cat}</Badge>;
-      },
+      accessorKey: 'shopName',
+      header: 'Shop Name',
+      cell: (info) => <span className="text-slate-600">{info.getValue() as string || '-'}</span>,
     },
     {
-      header: 'City / State',
+      accessorKey: 'category',
+      header: 'C. Category',
+      cell: (info) => <span className="text-slate-700">{info.getValue() as string}</span>,
+    },
+    {
+      header: 'Aadhar No.',
       cell: (info) => (
-        <span className="text-slate-600">
-          {info.row.original.address.city || 'N/A'}, {info.row.original.address.state.split(' ')[0]}
+        <span className="text-slate-600 font-mono text-[11px]">
+          {info.row.original.taxDetails?.aadharNo || '-'}
         </span>
       ),
     },
     {
-      header: 'Gold Balance',
-      cell: (info) => {
-        const g = info.row.original.balance.gold;
-        return (
-          <span
-            className={`font-extrabold ${g >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}
-          >
-            {g >= 0 ? '+' : ''}
-            {g.toFixed(3)}g
-          </span>
-        );
-      },
+      header: 'GST No.',
+      cell: (info) => (
+        <span className="text-slate-600 font-mono text-[11px]">
+          {info.row.original.taxDetails?.gstNo || '-'}
+        </span>
+      ),
     },
     {
-      header: 'Cash Balance',
-      cell: (info) => {
-        const c = info.row.original.balance.cash;
-        return (
-          <span
-            className={`font-extrabold ${c >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}
-          >
-            ₹{c.toLocaleString('en-IN')}
-          </span>
-        );
-      },
+      header: 'Licence No.',
+      cell: (info) => (
+        <span className="text-slate-600 font-mono text-[11px]">
+          {info.row.original.taxDetails?.licenceNo || '-'}
+        </span>
+      ),
+    },
+    {
+      header: 'Profile Photo',
+      cell: (info) => (
+        <span className="text-slate-400">
+          {info.row.original.profilePhoto ? '📷' : '-'}
+        </span>
+      ),
+    },
+    {
+      header: 'Address',
+      cell: (info) => (
+        <span className="text-slate-600">
+          {info.row.original.address.city || info.row.original.address.state.split(' ')[0]}
+        </span>
+      ),
     },
     {
       id: 'actions',
-      header: 'Actions',
-      cell: (info) => (
-        <button
-          onClick={() => handleDelete(info.row.original.id, info.row.original.name)}
-          className="p-1 rounded text-red-600 hover:bg-red-50"
-          title="Delete Customer"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+      header: 'Action',
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-1 justify-center">
+          <button
+            onClick={() => handleDelete(row.original.id, row.original.name)}
+            className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+            title="Options"
+          >
+            <MoreVertical className="h-3.5 w-3.5" />
+          </button>
+        </div>
       ),
     },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-2">
-        <div className="flex items-center space-x-2">
-          <div className="h-9 w-9 rounded-lg bg-brand-maroon text-brand-gold flex items-center justify-center">
-            <Users className="h-5 w-5" />
+      {/* Top Search Bar Matching reference/customer_list_1440.png */}
+      <div className="bg-white p-3 rounded-xl border border-amber-300 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-4 flex-1">
+          {/* Customer No / Name Search */}
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-slate-800 whitespace-nowrap">Customer No / Name :</span>
+            <div className="relative flex items-center">
+              <select
+                value={selectedCustFilter}
+                onChange={(e) => setSelectedCustFilter(e.target.value)}
+                className="w-48 sm:w-60 px-3 py-1.5 rounded-l-md border border-r-0 border-slate-300 bg-white font-medium text-slate-700 focus:outline-none focus:border-brand-maroon"
+              >
+                <option value="all">Select</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={String(c.customerNo)}>
+                    {c.customerNo} / {c.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="px-2.5 py-2 bg-brand-maroon text-white rounded-r-md hover:bg-brand-maroon-dark transition-colors"
+              >
+                <Search className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-              CUSTOMER DIRECTORY (ग्राहक डायरेक्टरी)
-            </h1>
-            <p className="text-xs text-slate-500">
-              Manage client accounts, Karigars, wholesalers, GST numbers, and contact profiles
-            </p>
+
+          {/* Mobile No Search */}
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-slate-800 whitespace-nowrap">Mobile No :</span>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                placeholder="Search Mobile"
+                value={mobileSearch}
+                onChange={(e) => setMobileSearch(e.target.value)}
+                className="w-40 sm:w-56 px-3 py-1.5 rounded-l-md border border-r-0 border-slate-300 bg-white font-medium text-slate-700 focus:outline-none focus:border-brand-maroon"
+              />
+              <button
+                type="button"
+                className="px-2.5 py-2 bg-brand-maroon text-white rounded-r-md hover:bg-brand-maroon-dark transition-colors"
+              >
+                <Search className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
+
+          {/* Red + Circle Button to Add Customer */}
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="h-8 w-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:bg-rose-700 shadow-xs shrink-0"
+            title="Add New Customer"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
         </div>
 
+        {/* Brand Logo Box */}
+        <div className="flex items-center space-x-2 pl-4 border-l border-slate-200">
+          <div className="h-8 w-8 rounded-lg bg-brand-maroon text-brand-gold flex items-center justify-center font-black text-sm shadow-xs">
+            DT
+          </div>
+          <div className="leading-tight">
+            <span className="font-extrabold text-slate-800 tracking-tight text-xs block">
+              DELIGO TECHNOLOGIES
+            </span>
+            <span className="text-[10px] text-brand-maroon font-semibold block">
+              Customer Directory
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Import from Excel Dropdown Bar */}
+      <div className="flex items-center justify-center">
         <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center space-x-1.5 px-3 py-1.5 bg-brand-maroon text-white rounded-md text-xs font-semibold hover:bg-brand-maroon-dark transition-all shadow-xs"
+          type="button"
+          onClick={() => showToast('Import template ready: Select CSV / XLSX file')}
+          className="flex items-center space-x-2 px-4 py-1.5 rounded-full border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-xs"
         >
-          <UserPlus className="h-3.5 w-3.5" />
-          <span>Add New Customer</span>
+          <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
+          <span>Import Customers From Excel</span>
+          <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
         </button>
       </div>
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={customers}
-        searchPlaceholder="Search customers by name, phone, shop, or city..."
-        exportFileName="customers_list.csv"
-      />
+      {/* Customer Table */}
+      <div className="bg-white rounded-xl border border-slate-300 shadow-xs overflow-hidden">
+        <DataTable
+          columns={columns}
+          data={filteredCustomers}
+          searchPlaceholder="Filter customer directory..."
+          exportFileName="customers_directory.csv"
+        />
 
-      {/* Add Customer Modal */}
+        {/* Footer Bar Matching reference/customer_list_1440.png */}
+        <div className="bg-slate-600 px-4 py-2 flex items-center justify-end border-t border-slate-500">
+          <button
+            onClick={() => window.print()}
+            className="p-1.5 rounded bg-white text-brand-maroon hover:bg-slate-100 shadow-xs transition-colors"
+            title="Print Customer List"
+          >
+            <Printer className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Add Customer Modal Matching reference/customer_add_1440.png */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="ADD NEW CUSTOMER (नया ग्राहक जोड़ें)"
+        title="ADD NEW CUSTOMER"
         maxWidth="2xl"
       >
-        <form onSubmit={handleCreateCustomer} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Customer Name (ग्राहक का नाम) <span className="text-red-500">*</span>
-              </label>
+        <div className="space-y-4 text-xs">
+          {/* Top Primary Section */}
+          <div className="space-y-2.5 p-3 rounded-lg border border-slate-200 bg-white">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                CUSTOMER NO. :
+              </span>
+              <span className="flex-1 font-black text-rose-600 text-sm">
+                {customerNo}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                <span className="text-red-500 mr-0.5">*</span> CUSTOMER / SHOP NAME :
+              </span>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Ramesh Chandra Verma"
-                className="w-full px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:border-brand-maroon font-semibold"
+                placeholder="Name"
+                className="flex-1 px-3 py-1.5 rounded border border-emerald-400 text-xs font-semibold focus:outline-none focus:border-emerald-600"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Shop / Business Name (दुकान का नाम)
-              </label>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                <span className="text-red-500 mr-0.5">*</span> MOBILE NO :
+              </span>
+              <input
+                type="text"
+                required
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="Whatsapp Mobile No."
+                className="flex-1 px-3 py-1.5 rounded border border-emerald-400 text-xs font-semibold focus:outline-none focus:border-emerald-600"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                CUSTOMER CATEGORY :
+              </span>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as any)}
+                className="flex-1 px-3 py-1.5 rounded border border-slate-300 text-xs font-semibold focus:outline-none"
+              >
+                <option value="Jewelry Owner">Jewelry Owner</option>
+                <option value="Karigar">Karigar</option>
+                <option value="Whole Seller">Whole Seller</option>
+                <option value="Galaiwala">Galaiwala</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+
+            {/* Floppy Disk Save Button */}
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => handleCreateCustomer()}
+                className="p-2 rounded bg-brand-maroon text-white hover:bg-brand-maroon-dark transition-colors inline-flex items-center justify-center shadow-xs"
+                title="Save Customer"
+              >
+                <Save className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Additional Optional Information Section */}
+          <div className="space-y-2.5 p-3 rounded-lg border border-slate-200 bg-white">
+            <h4 className="text-center font-bold text-slate-800 border-b pb-1 text-xs">
+              Additional Optional Information
+            </h4>
+
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                SHOP / CUSTOMER NAME :
+              </span>
               <input
                 type="text"
                 value={shopName}
                 onChange={(e) => setShopName(e.target.value)}
-                placeholder="e.g. Verma Jewellers"
-                className="w-full px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:border-brand-maroon"
+                placeholder="Shop Name"
+                className="flex-1 px-3 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Primary Mobile (WhatsApp) <span className="text-red-500">*</span>
-              </label>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                SHOP ADDRESS :
+              </span>
               <input
-                type="tel"
-                required
-                maxLength={10}
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="10-digit number"
-                className="w-full px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:border-brand-maroon font-semibold"
+                type="text"
+                value={shopAddress}
+                onChange={(e) => setShopAddress(e.target.value)}
+                placeholder="Eg : Block No / House No. /City"
+                className="flex-1 px-3 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Secondary Mobile
-              </label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center">
+                <span className="font-bold text-slate-700 w-24 text-right pr-2">GST NO. :</span>
+                <input
+                  type="text"
+                  value={gstNo}
+                  onChange={(e) => setGstNo(e.target.value)}
+                  placeholder="Eg : DJHGH46545J"
+                  className="flex-1 px-2.5 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <span className="font-bold text-slate-700 w-28 text-right pr-2">Lic. NO. - Eg :</span>
+                <input
+                  type="text"
+                  value={licenceNo}
+                  onChange={(e) => setLicenceNo(e.target.value)}
+                  placeholder="US555255S"
+                  className="flex-1 px-2.5 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center">
+                <span className="font-bold text-slate-700 w-24 text-right pr-2">PAN NO. :</span>
+                <input
+                  type="text"
+                  value={panNo}
+                  onChange={(e) => setPanNo(e.target.value)}
+                  placeholder="Eg : DJHGH46545J"
+                  className="flex-1 px-2.5 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <span className="font-bold text-slate-700 w-28 text-right pr-2">Aadhar No :</span>
+                <input
+                  type="text"
+                  value={aadharNo}
+                  onChange={(e) => setAadharNo(e.target.value)}
+                  placeholder="Aadhar No"
+                  className="flex-1 px-2.5 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                PROFILE PHOTO :
+              </span>
               <input
-                type="tel"
-                maxLength={10}
-                value={mobileSecondary}
-                onChange={(e) => setMobileSecondary(e.target.value)}
-                placeholder="Alternate phone"
-                className="w-full px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:border-brand-maroon"
+                type="file"
+                className="flex-1 text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded file:border file:border-slate-300 file:bg-slate-50 file:text-xs"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Category (वर्ग)
-              </label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center">
+                <span className="font-bold text-slate-700 w-24 text-right pr-2">Logo :</span>
+                <input
+                  type="text"
+                  value={logo}
+                  onChange={(e) => setLogo(e.target.value)}
+                  placeholder="Eg : KSJD"
+                  className="flex-1 px-2.5 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <span className="font-bold text-slate-700 w-32 text-right pr-2">Registration No :</span>
+                <input
+                  type="text"
+                  value={registrationNo}
+                  onChange={(e) => setRegistrationNo(e.target.value)}
+                  placeholder="2392792749"
+                  className="flex-1 px-2.5 py-1.5 rounded border border-slate-300 text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-700 w-44 text-right pr-3">
+                State Name :
+              </span>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as any)}
-                className="w-full px-3 py-1.5 rounded border border-slate-300 bg-white focus:outline-none"
-              >
-                <option value="Jewelry Owner">Jewelry Owner (ज्वेलरी मालिक)</option>
-                <option value="Karigar">Karigar (कारीगर)</option>
-                <option value="Galaiwala">Galaiwala (गलाईवाला)</option>
-                <option value="Whole Seller">Whole Seller (थोक विक्रेता)</option>
-                <option value="Others">Others</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
-            <span className="text-[11px] font-bold text-slate-700 block uppercase">
-              Address & Location Details
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <input
-                type="text"
-                value={line1}
-                onChange={(e) => setLine1(e.target.value)}
-                placeholder="Shop / House No."
-                className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 bg-white"
-              />
-              <input
-                type="text"
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                placeholder="Street / Area / Market"
-                className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 bg-white"
-              />
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="City (e.g. Indore)"
-                className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                State (राज्य व GST कोड)
-              </label>
-              <select
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 bg-white"
+                value={stateName}
+                onChange={(e) => setStateName(e.target.value)}
+                className="flex-1 px-3 py-1.5 rounded border border-slate-300 text-xs font-semibold focus:outline-none"
               >
                 {INDIAN_STATES.map((st) => (
                   <option key={st} value={st}>
@@ -400,61 +570,21 @@ export const CustomerListPage: React.FC = () => {
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* Tax Information */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">GSTIN No.</label>
-              <input
-                type="text"
-                value={gstNo}
-                onChange={(e) => setGstNo(e.target.value)}
-                placeholder="15-digit GSTIN"
-                className="w-full px-3 py-1.5 rounded border border-slate-300 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">PAN Card</label>
-              <input
-                type="text"
-                value={panNo}
-                onChange={(e) => setPanNo(e.target.value)}
-                placeholder="10-digit PAN"
-                className="w-full px-3 py-1.5 rounded border border-slate-300 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Aadhar Card</label>
-              <input
-                type="text"
-                value={aadharNo}
-                onChange={(e) => setAadharNo(e.target.value)}
-                placeholder="12-digit UID"
-                className="w-full px-3 py-1.5 rounded border border-slate-300 focus:outline-none"
-              />
+            {/* Floppy Disk Save Button */}
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => handleCreateCustomer()}
+                className="p-2 rounded bg-brand-maroon text-white hover:bg-brand-maroon-dark transition-colors inline-flex items-center justify-center shadow-xs"
+                title="Save Customer Details"
+              >
+                <Save className="h-4 w-4" />
+              </button>
             </div>
           </div>
-
-          <div className="flex justify-end space-x-2 pt-3 border-t">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 bg-slate-100 rounded text-slate-700 font-semibold text-xs hover:bg-slate-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex items-center space-x-1.5 px-5 py-2 bg-brand-maroon text-white rounded font-bold text-xs hover:bg-brand-maroon-dark transition-all shadow-xs"
-            >
-              <Save className="h-4 w-4" />
-              <span>Save Customer</span>
-            </button>
-          </div>
-        </form>
+        </div>
       </Modal>
     </div>
   );
 };
-

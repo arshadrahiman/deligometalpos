@@ -9,6 +9,8 @@ import {
   calculateDiffGold,
   calculateDiffAmount,
   calculateFinalCash,
+  convertCashToGold,
+  convertGoldToCash,
 } from '../../utils/calculations/bullionMath';
 import { CustomerSelect } from '../../components/shared/CustomerSelect';
 import { DataTable } from '../../components/common/DataTable';
@@ -26,6 +28,11 @@ import {
   IndianRupee,
   Layers,
   ArrowRightLeft,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Calculator,
 } from 'lucide-react';
 
 export const ExchangePage: React.FC = () => {
@@ -39,16 +46,35 @@ export const ExchangePage: React.FC = () => {
 
   // Form Fields
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [weight, setWeight] = useState<number>(10.0);
+
+  // Weight & Less weight
+  const [weight, setWeight] = useState<number>(100.0);
+  const [lessWeight, setLessWeight] = useState<number>(0.0);
+
+  // Touch & Touch Wastage
   const [touch, setTouch] = useState<number>(91.6);
+  const [touchMinus, setTouchMinus] = useState<number>(0.0);
+
   const [sample, setSample] = useState<ExchangeTransaction['sample']>('lagdi');
   const [extraGold, setExtraGold] = useState<number>(0.0);
-  const [settledGold, setSettledGold] = useState<number>(0.0);
-  const [rate, setRate] = useState<number>(summary.marketRates.gold24K || 75500);
-  const [charges, setCharges] = useState<number>(0.0);
-  const [physicalCash, setPhysicalCash] = useState<number>(0.0);
-  const [onlineRtgs, setOnlineRtgs] = useState<number>(0.0);
-  const [selfBank2, setSelfBank2] = useState<number>(0.0);
+  const [settledGold, setSettledGold] = useState<number>(90.0);
+  const [rate, setRate] = useState<number>(80000);
+  const [saleRate, setSaleRate] = useState<number>(144500);
+  const [purchaseRate, setPurchaseRate] = useState<number>(140000);
+  const [charges, setCharges] = useState<number>(300.0);
+
+  // Payment splits (Given vs Received)
+  const [givenCash, setGivenCash] = useState<number>(12500);
+  const [recievedCash, setRecievedCash] = useState<number>(0);
+  const [onlineGivenRtgs, setOnlineGivenRtgs] = useState<number>(0);
+  const [onlineRecivRtgs, setOnlineRecivRtgs] = useState<number>(0);
+  const [selfBank2GivenRtgs, setSelfBank2GivenRtgs] = useState<number>(0);
+  const [selfBank2RecivRtgs, setSelfBank2RecivRtgs] = useState<number>(0);
+
+  // Inline Bhavcut
+  const [bhavcutInputAmt, setBhavcutInputAmt] = useState<number>(0);
+  const [bhavcutConvertedGold, setBhavcutConvertedGold] = useState<number>(0);
+
   const [narration, setNarration] = useState<string>('');
 
   useEffect(() => {
@@ -60,8 +86,10 @@ export const ExchangePage: React.FC = () => {
     setTransactions(list);
   };
 
-  // Real-time calculations
-  const fineGold = calculateFineGold(weight, touch);
+  // Real-time calculations with Less Weight & Touch Minus
+  const netWeight = Math.max(0, Math.round((weight - lessWeight) * 1000) / 1000);
+  const totalTouch = Math.max(0, Math.round((touch - touchMinus) * 100) / 100);
+  const fineGold = calculateFineGold(netWeight, totalTouch);
   const afterFine = calculateAfterFine(fineGold, extraGold);
   const diffGold = calculateDiffGold(afterFine, settledGold);
   const diffAmount = calculateDiffAmount(diffGold, rate);
@@ -70,10 +98,36 @@ export const ExchangePage: React.FC = () => {
   // Udhari projections
   const oldGoldBal = selectedCustomer?.balance.gold || 0;
   const oldCashBal = selectedCustomer?.balance.cash || 0;
+  const oldSilverBal = selectedCustomer?.balance.silver ?? -413.043;
+
+  const jamaGold = txnType === 'BUY' && diffGold > 0 ? diffGold : 0;
+  const udharGold =
+    txnType === 'BUY' && diffGold < 0
+      ? Math.abs(diffGold)
+      : txnType === 'SELL'
+      ? diffGold
+      : 0;
   const goldDelta = txnType === 'BUY' ? diffGold : -diffGold;
-  const cashDelta = txnType === 'BUY' ? finalCash : -finalCash;
   const newGoldBal = Math.round((oldGoldBal + goldDelta) * 1000) / 1000;
+
+  const jamaCash = txnType === 'SELL' ? finalCash : 0;
+  const udharCash = txnType === 'BUY' ? finalCash : 0;
+  const cashDelta = txnType === 'BUY' ? finalCash : -finalCash;
   const newCashBal = Math.round((oldCashBal + cashDelta) * 100) / 100;
+
+  const handleInlineBhavcutAmtToGold = () => {
+    if (!bhavcutInputAmt || !rate) return;
+    const g = convertCashToGold(bhavcutInputAmt, rate);
+    setBhavcutConvertedGold(g);
+    showToast(`Converted ₹${bhavcutInputAmt.toLocaleString('en-IN')} to ${g.toFixed(3)} gm Gold`);
+  };
+
+  const handleInlineBhavcutGoldToAmt = () => {
+    if (!bhavcutConvertedGold || !rate) return;
+    const c = convertGoldToCash(bhavcutConvertedGold, rate);
+    setBhavcutInputAmt(c);
+    showToast(`Converted ${bhavcutConvertedGold.toFixed(3)} gm Gold to ₹${c.toLocaleString('en-IN')}`);
+  };
 
   const handleSave = async (openSlip: boolean = false) => {
     if (!selectedCustomer) {
@@ -81,13 +135,17 @@ export const ExchangePage: React.FC = () => {
       return;
     }
 
+    const physicalCash = txnType === 'BUY' ? givenCash : recievedCash;
+    const onlineRtgs = txnType === 'BUY' ? onlineGivenRtgs : onlineRecivRtgs;
+    const selfBank2 = txnType === 'BUY' ? selfBank2GivenRtgs : selfBank2RecivRtgs;
+
     const newTxn = await exchangeService.createTransaction({
       type: txnType,
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
       customerNo: selectedCustomer.customerNo,
-      weight,
-      touch,
+      weight: netWeight,
+      touch: totalTouch,
       sample,
       fineGold,
       extraGold,
@@ -102,12 +160,12 @@ export const ExchangePage: React.FC = () => {
       udhariBefore: {
         gold: oldGoldBal,
         cash: oldCashBal,
-        silver: selectedCustomer?.balance.silver ?? -413.043,
+        silver: oldSilverBal,
       },
       udhariAfter: {
         gold: newGoldBal,
         cash: newCashBal,
-        silver: selectedCustomer?.balance.silver ?? -413.043,
+        silver: oldSilverBal,
       },
       narration,
     });
@@ -123,89 +181,134 @@ export const ExchangePage: React.FC = () => {
   const columns: ColumnDef<ExchangeTransaction>[] = [
     {
       accessorKey: 'transactionNo',
-      header: 'T. No',
+      header: 'SN',
       cell: (info) => <span className="font-bold">#{info.getValue() as number}</span>,
     },
     {
       accessorKey: 'dateTime',
-      header: 'Date / Time',
-      cell: (info) => <span className="text-slate-500">{info.getValue() as string}</span>,
+      header: 'Date/Time',
+      cell: (info) => (
+        <span className="text-slate-600 font-mono text-[11px] whitespace-pre-line">
+          {(info.getValue() as string).replace(' ', '\n')}
+        </span>
+      ),
     },
     {
       accessorKey: 'customerName',
-      header: 'Customer',
+      header: 'C. No/C. Name',
       cell: (info) => (
         <div className="flex flex-col">
-          <span className="font-semibold text-slate-800">{info.getValue() as string}</span>
-          <span className="text-[10px] text-slate-400">
-            #{info.row.original.customerNo}
+          <span className="font-bold text-slate-800 text-xs">
+            {info.row.original.customerNo} /
+          </span>
+          <span className="font-semibold text-slate-700 text-xs">
+            {info.getValue() as string}
           </span>
         </div>
       ),
     },
     {
-      accessorKey: 'type',
-      header: 'Type',
-      cell: (info) => (
-        <Badge variant={info.getValue() === 'BUY' ? 'success' : 'danger'}>
-          {info.getValue() as string}
-        </Badge>
-      ),
-    },
-    {
       accessorKey: 'weight',
-      header: 'Weight (g)',
+      header: 'Weight',
       cell: (info) => (
-        <span className="font-semibold">{(info.getValue() as number).toFixed(3)}</span>
-      ),
-    },
-    {
-      accessorKey: 'touch',
-      header: 'Touch %',
-      cell: (info) => <span>{(info.getValue() as number).toFixed(2)}%</span>,
-    },
-    {
-      accessorKey: 'fineGold',
-      header: 'Fine Gold (g)',
-      cell: (info) => (
-        <span className="font-bold text-amber-700">
-          {(info.getValue() as number).toFixed(3)}
+        <span className="font-mono font-medium text-slate-800">
+          ☑ {(info.getValue() as number).toFixed(3)} gm
         </span>
       ),
     },
     {
-      accessorKey: 'diffGold',
-      header: 'Diff Gold (g)',
+      accessorKey: 'sample',
+      header: 'Sample',
+      cell: (info) => (
+        <span className="font-semibold text-emerald-800">{info.getValue() as string}</span>
+      ),
+    },
+    {
+      accessorKey: 'touch',
+      header: 'Purity %',
+      cell: (info) => <span>{(info.getValue() as number).toFixed(2)} %</span>,
+    },
+    {
+      accessorKey: 'fineGold',
+      header: 'Fine Gold',
+      cell: (info) => (
+        <span className="font-mono font-bold text-slate-900">
+          +{(info.getValue() as number).toFixed(3)} gm
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'extraGold',
+      header: '+G / -G',
       cell: (info) => {
         const val = info.getValue() as number;
         return (
-          <span className={`font-bold ${val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {val >= 0 ? '+' : ''}
-            {val.toFixed(3)}
+          <span className="font-mono text-slate-600">
+            {val > 0 ? `+${val.toFixed(3)} gm` : '-'}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: 'afterFine',
+      header: 'After Fine',
+      cell: (info) => (
+        <span className="font-mono font-bold text-slate-900">
+          {(info.getValue() as number).toFixed(3)} gm
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'settledGold',
+      header: 'Recv./Given',
+      cell: (info) => {
+        const val = info.getValue() as number;
+        return (
+          <span className="font-mono text-slate-700">
+            {val > 0 ? `-${val.toFixed(3)} gm` : '-'}
           </span>
         );
       },
     },
     {
       accessorKey: 'finalCash',
-      header: 'Final Amt (₹)',
+      header: 'Final Amt.',
       cell: (info) => (
-        <span className="font-bold text-slate-900">
-          ₹{(info.getValue() as number).toLocaleString('en-IN')}
+        <span className="font-bold text-slate-900 font-mono">
+          {(info.getValue() as number).toLocaleString('en-IN')} ₹
         </span>
       ),
     },
     {
-      id: 'actions',
-      header: 'Actions',
-      cell: (info) => (
-        <div className="flex items-center space-x-1.5">
-          <button
-            onClick={() => setSelectedReceipt(info.row.original)}
-            className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700"
-            title="Print Thermal Slip"
+      id: 'udhariSec',
+      header: 'Udhari Sec.',
+      cell: ({ row }) => {
+        const hasUdhari =
+          row.original.udhariAfter.gold !== 0 ||
+          row.original.udhariAfter.cash !== 0 ||
+          (row.original.udhariAfter.silver ?? 0) !== 0;
+        return (
+          <span
+            className={`font-black text-sm ${
+              hasUdhari ? 'text-blue-600' : 'text-rose-600'
+            }`}
           >
-            <Printer className="h-3.5 w-3.5" />
+            {hasUdhari ? '✓' : '✕'}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: 'Action',
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-1 justify-center">
+          <button
+            onClick={() => setSelectedReceipt(row.original)}
+            className="p-1 rounded text-slate-600 hover:text-brand-maroon hover:bg-slate-100 transition-colors"
+            title="Print 3-Inch Thermal Slip"
+          >
+            <Printer className="h-4 w-4" />
           </button>
         </div>
       ),
@@ -214,19 +317,36 @@ export const ExchangePage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Top Page Header & View Switcher */}
-      <div className="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-2">
+      {/* Top Rates Bar (Matching Reference Site Header) */}
+      <div className="flex flex-col sm:flex-row items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs gap-3">
         <div className="flex items-center space-x-2">
-          <div className="h-9 w-9 rounded-lg bg-brand-maroon text-brand-gold flex items-center justify-center">
-            <ArrowRightLeft className="h-5 w-5" />
+          <div className="h-8 w-8 rounded-lg bg-brand-maroon text-brand-gold flex items-center justify-center shrink-0">
+            <ArrowRightLeft className="h-4 w-4" />
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+            <h1 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
               EXCHANGE POS (बदला / पलटा)
             </h1>
-            <p className="text-xs text-slate-500">
-              High-speed gold purity exchange, allowance deduction & live settlement
+            <p className="text-[11px] text-slate-500">
+              Gold exchange & purity conversion terminal with live Udhari Section
             </p>
+          </div>
+        </div>
+
+        {/* Live Rates Badges */}
+        <div className="flex items-center space-x-3 text-xs">
+          <div className="flex items-center space-x-1.5 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">
+            <TrendingDown className="h-3.5 w-3.5 text-rose-600" />
+            <span className="text-slate-600 font-semibold">(बेचना) SALE RATE:</span>
+            <span className="font-black text-rose-700">₹{saleRate.toLocaleString('en-IN')}</span>
+            <span className="text-[10px] text-slate-400">₹/10gm</span>
+          </div>
+
+          <div className="flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-slate-600 font-semibold">(खरीदना) PURCHASE RATE:</span>
+            <span className="font-black text-emerald-700">₹{purchaseRate.toLocaleString('en-IN')}</span>
+            <span className="text-[10px] text-slate-400">₹/10gm</span>
           </div>
         </div>
 
@@ -234,7 +354,9 @@ export const ExchangePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('POS')}
             className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all ${
-              activeTab === 'POS' ? 'bg-brand-maroon text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'POS'
+                ? 'bg-brand-maroon text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <PlusCircle className="h-3.5 w-3.5" />
@@ -243,7 +365,9 @@ export const ExchangePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('LIST')}
             className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all ${
-              activeTab === 'LIST' ? 'bg-brand-maroon text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'LIST'
+                ? 'bg-brand-maroon text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <List className="h-3.5 w-3.5" />
@@ -253,38 +377,40 @@ export const ExchangePage: React.FC = () => {
       </div>
 
       {activeTab === 'POS' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Main Transaction Form (2 Columns) */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Left Column: Exchange Form Terminal (7 Cols) */}
+          <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             {/* Buy / Sell Tabs */}
-            <div className="flex border-b bg-slate-50">
+            <div className="grid grid-cols-2 text-center text-xs font-black border-b border-slate-200">
               <button
+                type="button"
                 onClick={() => setTxnType('BUY')}
-                className={`flex-1 py-2.5 text-center text-xs font-bold transition-all border-b-2 ${
+                className={`py-3 transition-colors ${
                   txnType === 'BUY'
-                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50'
-                    : 'border-transparent text-slate-500 hover:bg-slate-100'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                (खरीदना) BUY GOLD
+                (खरीदना) BUY - KACCHA GOLD
               </button>
               <button
+                type="button"
                 onClick={() => setTxnType('SELL')}
-                className={`flex-1 py-2.5 text-center text-xs font-bold transition-all border-b-2 ${
+                className={`py-3 transition-colors ${
                   txnType === 'SELL'
-                    ? 'border-brand-maroon text-brand-maroon bg-rose-50/50'
-                    : 'border-transparent text-slate-500 hover:bg-slate-100'
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                (बेचना) SELL GOLD
+                (बेचना) SELL - FINE GOLD
               </button>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-3.5">
               {/* Customer Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Customer / Shop Name (ग्राहक चयन) <span className="text-red-500">*</span>
+                  Customer No / Name (ग्राहक चयन) <span className="text-red-500">*</span>
                 </label>
                 <CustomerSelect
                   value={selectedCustomer?.id || ''}
@@ -292,60 +418,104 @@ export const ExchangePage: React.FC = () => {
                 />
               </div>
 
-              {/* Physical Weight & Touch Purity Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              {/* Physical Weight Matrix (Gross Wt, Less Wt, Net Wt) */}
+              <div className="grid grid-cols-3 gap-2.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Gross Weight (gm)
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    (वज़न) Weight (gm)
                   </label>
                   <input
                     type="number"
                     step="0.001"
                     value={weight}
                     onChange={(e) => setWeight(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 text-xs font-bold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
+                    className="w-full px-2.5 py-1.5 font-bold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Touch Purity (%)
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Less Wt (कम वजन gm)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    value={lessWeight}
+                    onChange={(e) => setLessWeight(Number(e.target.value))}
+                    className="w-full px-2.5 py-1.5 font-bold text-rose-700 rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Net Weight (gm)
+                  </label>
+                  <div className="px-2.5 py-1.5 font-extrabold bg-slate-200/70 rounded border border-slate-300 text-slate-900">
+                    {netWeight.toFixed(3)} gm
+                  </div>
+                </div>
+              </div>
+
+              {/* Touch & Purity Matrix (Touch, Touch -%, Total Touch, Sample) */}
+              <div className="grid grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    (टंच) Touch (%)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     value={touch}
                     onChange={(e) => setTouch(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 text-xs font-bold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
+                    className="w-full px-2 py-1.5 font-bold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Sample Type (नमूना)
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Touch (-%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={touchMinus}
+                    onChange={(e) => setTouchMinus(Number(e.target.value))}
+                    className="w-full px-2 py-1.5 font-bold text-rose-700 rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Total Touch (%)
+                  </label>
+                  <div className="px-2 py-1.5 font-extrabold bg-amber-100 rounded border border-amber-300 text-amber-900">
+                    {totalTouch.toFixed(2)}%
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Sample (नमूना)
                   </label>
                   <select
                     value={sample}
                     onChange={(e) => setSample(e.target.value as any)}
-                    className="w-full px-3 py-1.5 text-xs rounded border border-slate-300 bg-white focus:outline-none"
+                    className="w-full px-2 py-1.5 rounded border border-slate-300 bg-white focus:outline-none font-medium"
                   >
-                    <option value="lagdi">Lagdi (लगड़ी)</option>
-                    <option value="Rava">Rava (रवा)</option>
-                    <option value="99.9">99.9 Pure</option>
-                    <option value="Dhali">Dhali (ढाली)</option>
+                    <option value="lagdi">lagdi</option>
+                    <option value="Rava">Rava</option>
+                    <option value="99.9">99.9</option>
+                    <option value="Dhali">Dhali</option>
                     <option value="Depa">Depa</option>
-                    <option value="Zevar">Old Zevar (जेवर)</option>
+                    <option value="Zevar">Zevar</option>
                     <option value="Others">Others</option>
                   </select>
                 </div>
               </div>
 
-              {/* Calculated Pure Values Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-lg bg-amber-50/60 border border-amber-200 text-xs">
+              {/* Fine Gold & Difference Row */}
+              <div className="grid grid-cols-4 gap-2.5 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200 text-xs">
                 <div>
                   <span className="text-[10px] text-amber-800 font-semibold block uppercase">
-                    Fine Gold
+                    फाइन FINE
                   </span>
-                  <span className="text-base font-extrabold text-amber-900">
-                    {fineGold.toFixed(3)} g
+                  <span className="text-sm font-black text-amber-950">
+                    {fineGold.toFixed(3)} gm
                   </span>
                 </div>
                 <div>
@@ -357,115 +527,159 @@ export const ExchangePage: React.FC = () => {
                     step="0.001"
                     value={extraGold}
                     onChange={(e) => setExtraGold(Number(e.target.value))}
-                    className="w-20 px-2 py-0.5 text-xs font-bold rounded border border-amber-300 bg-white"
+                    className="w-full px-2 py-1 text-xs font-bold rounded border border-amber-300 bg-white"
                   />
                 </div>
                 <div>
                   <span className="text-[10px] text-amber-800 font-semibold block uppercase">
-                    After Fine
-                  </span>
-                  <span className="text-base font-extrabold text-brand-maroon">
-                    {afterFine.toFixed(3)} g
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-amber-800 font-semibold block uppercase">
-                    Settled Gold (gm)
+                    (दिया) GIVEN GOLD
                   </span>
                   <input
                     type="number"
                     step="0.001"
                     value={settledGold}
                     onChange={(e) => setSettledGold(Number(e.target.value))}
-                    placeholder="Physical g"
-                    className="w-20 px-2 py-0.5 text-xs font-bold rounded border border-amber-300 bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Rate & Financial Calculations */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Gold Rate (₹ / 10gm)
-                  </label>
-                  <input
-                    type="number"
-                    value={rate}
-                    onChange={(e) => setRate(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 text-xs font-semibold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
+                    className="w-full px-2 py-1 text-xs font-bold rounded border border-amber-300 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Diff Gold (Remaining)
-                  </label>
+                  <span className="text-[10px] text-amber-800 font-semibold block uppercase">
+                    (बाकि) DIFF GOLD
+                  </span>
                   <div
-                    className={`px-3 py-1.5 text-xs font-bold rounded border ${
-                      diffGold >= 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'
+                    className={`font-black text-sm ${
+                      diffGold >= 0 ? 'text-emerald-700' : 'text-rose-700'
                     }`}
                   >
                     {diffGold >= 0 ? '+' : ''}
                     {diffGold.toFixed(3)} gm
                   </div>
                 </div>
+              </div>
+
+              {/* Rate & Cash Calculations */}
+              <div className="grid grid-cols-3 gap-2.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Labor / Charges (₹ घटायें)
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    RATE [P/S] (₹/10gm)
+                  </label>
+                  <input
+                    type="number"
+                    value={rate}
+                    onChange={(e) => setRate(Number(e.target.value))}
+                    className="w-full px-2.5 py-1.5 font-bold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    (कैश) CASH [G/R] (₹)
+                  </label>
+                  <div className="px-2.5 py-1.5 font-black bg-slate-200/80 rounded border border-slate-300 text-slate-900">
+                    ₹ {diffAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    (चार्जेस) CHARGES (₹)
                   </label>
                   <input
                     type="number"
                     value={charges}
                     onChange={(e) => setCharges(Number(e.target.value))}
                     placeholder="0.00"
-                    className="w-full px-3 py-1.5 text-xs font-semibold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
+                    className="w-full px-2.5 py-1.5 font-bold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Payment Splits */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              {/* Final Cash Card Banner */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-brand-maroon text-white font-bold text-xs shadow-xs">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-semibold text-slate-700">
-                      Physical Cash (रोकड़ ₹)
+                  <span className="text-[11px] uppercase tracking-wider text-amber-300 block">
+                    (फाइनल कैश) FINAL CASH
+                  </span>
+                  <span className="text-xl font-black">
+                    ₹ {finalCash.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="text-right text-[11px] text-slate-200">
+                  <div>Diff Amt: ₹{diffAmount.toFixed(2)}</div>
+                  <div className="text-amber-300">Charge: {-charges} Rs</div>
+                </div>
+              </div>
+
+              {/* Split Payment Matrix: GIVEN vs RECIEVED */}
+              <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                  Settlement Breakdown (भुगतान विवरण)
+                </span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      GIVEN CASH (रोकड़ दिया ₹)
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setPhysicalCash(finalCash)}
-                      className="text-[10px] text-brand-maroon hover:underline font-semibold"
-                    >
-                      Fill ₹{finalCash}
-                    </button>
+                    <input
+                      type="number"
+                      value={givenCash}
+                      onChange={(e) => setGivenCash(Number(e.target.value))}
+                      className="w-full px-2.5 py-1 rounded border border-slate-300 font-bold text-emerald-700"
+                    />
                   </div>
-                  <input
-                    type="number"
-                    value={physicalCash}
-                    onChange={(e) => setPhysicalCash(Number(e.target.value))}
-                    className="w-full px-2.5 py-1 text-xs rounded border border-slate-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    Online / RTGS (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={onlineRtgs}
-                    onChange={(e) => setOnlineRtgs(Number(e.target.value))}
-                    className="w-full px-2.5 py-1 text-xs rounded border border-slate-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    Self Bank 2 (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={selfBank2}
-                    onChange={(e) => setSelfBank2(Number(e.target.value))}
-                    className="w-full px-2.5 py-1 text-xs rounded border border-slate-300"
-                  />
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      RECIEVED CASH (रोकड़ लिया ₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={recievedCash}
+                      onChange={(e) => setRecievedCash(Number(e.target.value))}
+                      className="w-full px-2.5 py-1 rounded border border-slate-300 font-bold text-rose-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      ONLINE GIVEN RTGS (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={onlineGivenRtgs}
+                      onChange={(e) => setOnlineGivenRtgs(Number(e.target.value))}
+                      className="w-full px-2.5 py-1 rounded border border-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      ONLINE RECIV. RTGS (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={onlineRecivRtgs}
+                      onChange={(e) => setOnlineRecivRtgs(Number(e.target.value))}
+                      className="w-full px-2.5 py-1 rounded border border-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      SELF BANK 2 GIVEN RTGS (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={selfBank2GivenRtgs}
+                      onChange={(e) => setSelfBank2GivenRtgs(Number(e.target.value))}
+                      className="w-full px-2.5 py-1 rounded border border-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      SELF BANK 2 RECIV. RTGS (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={selfBank2RecivRtgs}
+                      onChange={(e) => setSelfBank2RecivRtgs(Number(e.target.value))}
+                      className="w-full px-2.5 py-1 rounded border border-slate-300"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -475,7 +689,7 @@ export const ExchangePage: React.FC = () => {
                   type="text"
                   value={narration}
                   onChange={(e) => setNarration(e.target.value)}
-                  placeholder="Narration / Transaction remark (optional)..."
+                  placeholder="Write Narration/Remark (विवरण / टिप्पणी)..."
                   className="w-full px-3 py-1.5 text-xs rounded border border-slate-300 focus:outline-none focus:border-brand-maroon"
                 />
               </div>
@@ -497,126 +711,185 @@ export const ExchangePage: React.FC = () => {
                   className="flex items-center space-x-1.5 px-4 py-2 bg-brand-blue text-white font-bold text-xs rounded-lg hover:bg-blue-600 transition-all shadow-xs"
                 >
                   <Printer className="h-4 w-4" />
-                  <span>Save & Print 3-Inch Slip</span>
+                  <span>Print 3-Inch Slip</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Right Side: Live Transaction Summary & Udhari Balances */}
-          <div className="space-y-4">
-            {/* Final Cash Card */}
-            <div className="bg-linear-to-br from-brand-maroon to-slate-900 rounded-xl p-4 text-white shadow-md space-y-3">
-              <span className="text-[11px] font-semibold text-brand-gold uppercase tracking-wider block">
-                Net Final Settlement Amount
-              </span>
-              <div className="text-3xl font-black">
-                ₹ {finalCash.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </div>
-              <div className="text-xs text-slate-300 space-y-1 border-t border-white/20 pt-2">
-                <div className="flex justify-between">
-                  <span>Diff Gold:</span>
-                  <span className="font-bold text-white">{diffGold.toFixed(3)} gm</span>
+          {/* Right Column: Full Udhari Section (5 Cols) */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="bg-white rounded-xl border-2 border-emerald-600/30 shadow-xs overflow-hidden">
+              <div className="bg-emerald-700 px-4 py-2 text-white flex items-center justify-between">
+                <div className="flex items-center space-x-1.5">
+                  <Layers className="h-4 w-4" />
+                  <h3 className="text-xs font-black uppercase tracking-wider">
+                    Udhari Section (उधारी सेक्शन)
+                  </h3>
                 </div>
-                <div className="flex justify-between">
-                  <span>Diff Amount:</span>
-                  <span>₹ {diffAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Charges (Deduction):</span>
-                  <span className="text-amber-300 font-bold">
-                    {charges > 0 ? `{-₹ ${charges.toFixed(2)}}` : '₹ 0.00'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Udhari Running Balance Card */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
-              <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 border-b pb-2">
-                <Layers className="h-4 w-4 text-brand-maroon" />
-                <span>Customer Udhari Ledger (खाता बही)</span>
+                <span className="text-[10px] bg-emerald-800 px-2 py-0.5 rounded font-mono">
+                  {selectedCustomer ? `ID: #${selectedCustomer.customerNo}` : 'Select Customer'}
+                </span>
               </div>
 
-              {selectedCustomer ? (
-                <div className="space-y-2 text-xs">
-                  <div className="font-semibold text-slate-700">
-                    {selectedCustomer.name} (#{selectedCustomer.customerNo})
+              <div className="p-4 space-y-3 text-xs">
+                {/* Gold Udhari Grid */}
+                <div className="space-y-1.5 pb-3 border-b border-slate-200">
+                  <div className="flex items-center justify-between font-bold text-slate-800">
+                    <span>(सोना) Gold Ledger</span>
+                    <span className="font-mono text-[11px] text-slate-500">gm</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 p-2 bg-slate-50 rounded border border-slate-200 text-[11px]">
-                    <div>
-                      <span className="text-slate-500 block">Previous Gold:</span>
-                      <span className="font-bold text-slate-900">{oldGoldBal.toFixed(3)} g</span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
+                      <span className="text-slate-500 block text-[10px]">(पुराना) Old:</span>
+                      <span className="font-bold text-slate-900">{oldGoldBal.toFixed(3)} gm</span>
                     </div>
-                    <div>
-                      <span className="text-slate-500 block">NEW GOLD BAL:</span>
-                      <span
-                        className={`font-bold ${
-                          newGoldBal >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                        }`}
-                      >
-                        {newGoldBal >= 0 ? '+' : ''}
-                        {newGoldBal.toFixed(3)} g
+                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
+                      <span className="text-slate-500 block text-[10px]">Silver Old:</span>
+                      <span className="font-bold text-rose-700">
+                        {oldSilverBal < 0
+                          ? `{-${Math.abs(oldSilverBal).toFixed(3)} gm}`
+                          : `${oldSilverBal.toFixed(3)} gm`}
                       </span>
                     </div>
-                    <div className="pt-1 border-t">
-                      <span className="text-slate-500 block">Previous Cash:</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-1.5 rounded bg-emerald-50 border border-emerald-200">
+                      <span className="text-emerald-700 block text-[10px]">Jama (+):</span>
+                      <span className="font-bold text-emerald-800">{jamaGold.toFixed(3)} gm</span>
+                    </div>
+                    <div className="p-1.5 rounded bg-rose-50 border border-rose-200">
+                      <span className="text-rose-700 block text-[10px]">Udhar (-):</span>
+                      <span className="font-bold text-rose-800">{udharGold.toFixed(3)} gm</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-emerald-100/70 border border-emerald-300 flex items-center justify-between">
+                    <span className="font-bold text-emerald-950 text-xs">FINAL GOLD:</span>
+                    <span
+                      className={`font-black text-sm font-mono ${
+                        newGoldBal >= 0 ? 'text-emerald-900' : 'text-rose-700'
+                      }`}
+                    >
+                      {newGoldBal >= 0 ? '+' : ''}
+                      {newGoldBal.toFixed(3)} gm
+                    </span>
+                  </div>
+                </div>
+
+                {/* Cash Udhari Grid */}
+                <div className="space-y-1.5 pb-3 border-b border-slate-200">
+                  <div className="flex items-center justify-between font-bold text-slate-800">
+                    <span>(पैसे) Cash Ledger</span>
+                    <span className="font-mono text-[11px] text-slate-500">₹ (INR)</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
+                      <span className="text-slate-500 block text-[10px]">(पुराना) Old:</span>
                       <span className="font-bold text-slate-900">
                         ₹ {oldCashBal.toLocaleString('en-IN')}
                       </span>
                     </div>
-                    <div className="pt-1 border-t">
-                      <span className="text-slate-500 block">NEW CASH BAL:</span>
-                      <span
-                        className={`font-bold ${
-                          newCashBal >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                        }`}
-                      >
-                        ₹ {newCashBal.toLocaleString('en-IN')}
+                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
+                      <span className="text-slate-500 block text-[10px]">Old Silver Amt:</span>
+                      <span className="font-bold text-slate-900">₹ 0</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-1.5 rounded bg-emerald-50 border border-emerald-200">
+                      <span className="text-emerald-700 block text-[10px]">Jama (+):</span>
+                      <span className="font-bold text-emerald-800">
+                        ₹ {jamaCash.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="p-1.5 rounded bg-rose-50 border border-rose-200">
+                      <span className="text-rose-700 block text-[10px]">Udhar (-):</span>
+                      <span className="font-bold text-rose-800">
+                        ₹ {udharCash.toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
+
+                  <div className="p-2 rounded-lg bg-emerald-100/70 border border-emerald-300 flex items-center justify-between">
+                    <span className="font-bold text-emerald-950 text-xs">FINAL CASH:</span>
+                    <span
+                      className={`font-black text-sm font-mono ${
+                        newCashBal >= 0 ? 'text-emerald-900' : 'text-rose-700'
+                      }`}
+                    >
+                      ₹ {newCashBal.toLocaleString('en-IN')}
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div className="p-4 text-center text-xs text-slate-400">
-                  Select a customer to view previous and projected running balance.
+
+                {/* Inline Bhavcut Conversion Bar */}
+                <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-300 space-y-2">
+                  <div className="flex items-center space-x-1.5 text-xs font-bold text-amber-900">
+                    <Calculator className="h-3.5 w-3.5 text-amber-700" />
+                    <span>Inline Bhavcut Conversion</span>
+                  </div>
+
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={handleInlineBhavcutAmtToGold}
+                      className="px-2 py-1 bg-amber-600 text-white font-black text-xs rounded hover:bg-amber-700"
+                      title="Convert Cash to Gold"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <input
+                      type="number"
+                      value={bhavcutInputAmt || ''}
+                      onChange={(e) => setBhavcutInputAmt(Number(e.target.value))}
+                      placeholder="Amount ₹"
+                      className="w-full px-2 py-1 text-xs rounded border border-amber-300 bg-white"
+                    />
+                    <div className="text-[10px] font-bold text-slate-600 shrink-0">
+                      @{rate}/10g
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleInlineBhavcutGoldToAmt}
+                      className="px-2 py-1 bg-amber-600 text-white font-black text-xs rounded hover:bg-amber-700"
+                      title="Convert Gold to Cash"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {bhavcutConvertedGold > 0 && (
+                    <div className="text-[11px] font-bold text-amber-900">
+                      = {bhavcutConvertedGold.toFixed(3)} gm Pure Gold
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Save with Udhari Action */}
+                <button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  className="w-full flex items-center justify-center space-x-2 py-2 bg-emerald-700 text-white font-black text-xs rounded-lg hover:bg-emerald-800 transition-all shadow-xs"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>Print & Save with Udhari Section</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       ) : (
-        /* Past Records View */
-        <DataTable
-          columns={columns}
-          data={transactions}
-          searchPlaceholder="Search exchange records by name, ID, or weight..."
-          exportFileName="exchange_transactions.csv"
-          renderFooter={(data) => {
-            const totalWeight = data.reduce((acc, curr) => acc + curr.weight, 0);
-            const totalFine = data.reduce((acc, curr) => acc + curr.fineGold, 0);
-            const totalCash = data.reduce((acc, curr) => acc + curr.finalCash, 0);
-            return (
-              <tr>
-                <td colSpan={4} className="px-3 py-2 text-slate-900 font-bold">
-                  TOTALS ({data.length} Transactions)
-                </td>
-                <td className="px-3 py-2 font-bold">{totalWeight.toFixed(3)} g</td>
-                <td></td>
-                <td className="px-3 py-2 font-bold text-amber-800">{totalFine.toFixed(3)} g</td>
-                <td></td>
-                <td className="px-3 py-2 font-bold text-slate-900">
-                  ₹ {totalCash.toLocaleString('en-IN')}
-                </td>
-                <td></td>
-              </tr>
-            );
-          }}
-        />
+        /* History Log Tab */
+        <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4">
+          <DataTable data={transactions} columns={columns} searchPlaceholder="Search by name, ID, or weight..." />
+        </div>
       )}
 
-      {/* Thermal Receipt Modal */}
+      {/* 3-Inch Thermal Receipt Modal */}
       <ThermalReceiptModal
         isOpen={!!selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
@@ -625,4 +898,3 @@ export const ExchangePage: React.FC = () => {
     </div>
   );
 };
-

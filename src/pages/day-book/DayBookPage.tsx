@@ -1,207 +1,386 @@
 import React, { useState } from 'react';
-import { DayBookEntry } from '../../types';
-import { DataTable } from '../../components/common/DataTable';
-import { Badge } from '../../components/common/Badge';
-import { ColumnDef } from '@tanstack/react-table';
-import { BookOpen, Printer, Download, Sparkles } from 'lucide-react';
+import {
+  Printer,
+  Calendar,
+  Lock,
+  ChevronLeft,
+  ChevronDown,
+} from 'lucide-react';
+
+interface DayBookDetailedRow {
+  sn: number;
+  dateTime: string;
+  customer: string;
+  source: string;
+  subSource?: string;
+  outAmt: number;
+  inAmt: number;
+  balAmt: number;
+  outGold: number;
+  inGold: number;
+  balGold: number;
+  outSilver: number;
+  inSilver: number;
+  balSilver: number;
+}
 
 export const DayBookPage: React.FC = () => {
-  const [entries, setEntries] = useState<DayBookEntry[]>([
-    {
-      id: 'DB-101',
-      dateTime: '2026-11-11 09:30:00',
-      partyName: 'Opening Stock Balance',
-      sourceModule: 'Exchange',
-      referenceId: 'OPEN-01',
-      cashFlow: { debit: 0, credit: 2540000, runningBalance: 2540000 },
-      goldFlow: { debit: 0, credit: 350.25, runningBalance: 350.25 },
-      silverFlow: { debit: 0, credit: 12500, runningBalance: 12500 },
-      narration: 'Day opening physical safe balance',
-    },
-    {
-      id: 'DB-102',
-      dateTime: '2026-11-11 11:20:00',
-      partyName: 'Rajesh Swarnakar',
-      sourceModule: 'Exchange',
-      referenceId: 'EX-2026-101',
-      cashFlow: { debit: 22562.1, credit: 0, runningBalance: 2517437.9 },
-      goldFlow: { debit: 0, credit: 2.942, runningBalance: 353.192 },
-      silverFlow: { debit: 0, credit: 0, runningBalance: 12500 },
-      narration: 'Old lagdi exchange transaction',
-    },
-    {
-      id: 'DB-103',
-      dateTime: '2026-11-11 14:45:00',
-      partyName: 'Pooja Jewellers',
-      sourceModule: 'BuySell',
-      referenceId: 'BS-2026-102',
-      cashFlow: { debit: 0, credit: 151000, runningBalance: 2668437.9 },
-      goldFlow: { debit: 20.0, credit: 0, runningBalance: 333.192 },
-      silverFlow: { debit: 0, credit: 0, runningBalance: 12500 },
-      narration: '20gm pure bar cash sale',
-    },
-  ]);
+  const [fromDate, setFromDate] = useState('2026-11-11');
+  const [toDate, setToDate] = useState('2026-11-11');
+  const [selectedMonth, setSelectedMonth] = useState('Select Month');
+  const [selectedAction, setSelectedAction] = useState('All Actions');
+  const [selectedSource, setSelectedSource] = useState('All Sources');
+  const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
 
-  const columns: ColumnDef<DayBookEntry>[] = [
+  const rows: DayBookDetailedRow[] = [
     {
-      accessorKey: 'dateTime',
-      header: 'Time',
-      cell: (info) => (
-        <span className="text-slate-500 font-mono">
-          {(info.getValue() as string).split(' ')[1]}
-        </span>
-      ),
+      sn: 1,
+      dateTime: '03 : 54 : 01 : pm',
+      customer: '386 / RAHUL 1',
+      source: 'Exchange (G)',
+      subSource: '[ Wt: 98.000 | Tounch: 85.00% | Fin: 83.300 | Diff: 3.496 | Rate: 1,40,000 ]',
+      outAmt: 38944,
+      inAmt: 0,
+      balAmt: 7230290,
+      outGold: 80.0,
+      inGold: 0,
+      balGold: 469.009,
+      outSilver: 0,
+      inSilver: 0,
+      balSilver: 151498.093,
     },
     {
-      accessorKey: 'partyName',
-      header: 'Party / Description',
-      cell: (info) => (
-        <div className="flex flex-col">
-          <span className="font-bold text-slate-800">{info.getValue() as string}</span>
-          <span className="text-[10px] text-slate-400 font-medium">
-            {info.row.original.narration}
-          </span>
-        </div>
-      ),
+      sn: 2,
+      dateTime: '03 : 50 : 29 : pm',
+      customer: '386 / RAHUL 1',
+      source: 'Exchange (G)',
+      subSource: '[ Wt: 105.000 | Tounch: 85.00% | Fin: 89.250 | Diff: 89.460 | Rate: 1,40,000 ]',
+      outAmt: 1252390,
+      inAmt: 0,
+      balAmt: 7269234,
+      outGold: 0,
+      inGold: 0,
+      balGold: 549.009,
+      outSilver: 0,
+      inSilver: 0,
+      balSilver: 151498.093,
     },
     {
-      accessorKey: 'sourceModule',
-      header: 'Source',
-      cell: (info) => <Badge variant="info">{info.getValue() as string}</Badge>,
+      sn: 3,
+      dateTime: '01 : 35 : 14 : pm',
+      customer: '100 / XYZ',
+      source: 'Exchange (G)',
+      subSource: '[ Wt: 12.000 | Tounch: 75.00% | Fin: 9.000 | Diff: 9.024 | Rate: 1,40,000 ]',
+      outAmt: 126286,
+      inAmt: 0,
+      balAmt: 8521624,
+      outGold: 0,
+      inGold: 0,
+      balGold: 549.009,
+      outSilver: 0,
+      inSilver: 0,
+      balSilver: 151498.093,
     },
     {
-      header: 'Cash Flow (₹)',
-      cell: (info) => {
-        const c = info.row.original.cashFlow;
-        return (
-          <div className="flex flex-col text-right">
-            {c.credit > 0 && (
-              <span className="font-bold text-emerald-700">+₹{c.credit.toLocaleString('en-IN')}</span>
-            )}
-            {c.debit > 0 && (
-              <span className="font-bold text-rose-700">-₹{c.debit.toLocaleString('en-IN')}</span>
-            )}
-            <span className="text-[10px] text-slate-500 font-semibold">
-              Bal: ₹{c.runningBalance.toLocaleString('en-IN')}
-            </span>
-          </div>
-        );
-      },
+      sn: 4,
+      dateTime: '01 : 01 : 17 : pm',
+      customer: 'bank / bank',
+      source: 'Income Expense (G)',
+      outAmt: 0,
+      inAmt: 0,
+      balAmt: 8647910,
+      outGold: 0,
+      inGold: 0,
+      balGold: 549.009,
+      outSilver: 0,
+      inSilver: 0,
+      balSilver: 151498.093,
     },
     {
-      header: 'Gold Flow (gm)',
-      cell: (info) => {
-        const g = info.row.original.goldFlow;
-        return (
-          <div className="flex flex-col text-right">
-            {g.credit > 0 && (
-              <span className="font-bold text-emerald-700">+{g.credit.toFixed(3)}g</span>
-            )}
-            {g.debit > 0 && (
-              <span className="font-bold text-rose-700">-{g.debit.toFixed(3)}g</span>
-            )}
-            <span className="text-[10px] text-amber-800 font-semibold">
-              Bal: {g.runningBalance.toFixed(3)}g
-            </span>
-          </div>
-        );
-      },
+      sn: 5,
+      dateTime: '01 : 00 : 08 : pm',
+      customer: '99 / Bank (Online)',
+      source: 'Loan (G)',
+      subSource: '( Udhari )',
+      outAmt: 50000,
+      inAmt: 0,
+      balAmt: 8647910,
+      outGold: 0,
+      inGold: 0,
+      balGold: 549.009,
+      outSilver: 0,
+      inSilver: 0,
+      balSilver: 151498.093,
     },
     {
-      header: 'Silver Flow (gm)',
-      cell: (info) => {
-        const s = info.row.original.silverFlow;
-        return (
-          <div className="flex flex-col text-right">
-            {s.credit > 0 && (
-              <span className="font-bold text-emerald-700">+{s.credit.toFixed(1)}g</span>
-            )}
-            {s.debit > 0 && (
-              <span className="font-bold text-rose-700">-{s.debit.toFixed(1)}g</span>
-            )}
-            <span className="text-[10px] text-slate-500 font-semibold">
-              Bal: {s.runningBalance.toFixed(1)}g
-            </span>
-          </div>
-        );
-      },
+      sn: 6,
+      dateTime: '12 : 59 : 14 : pm',
+      customer: '99 / Bank (Online)',
+      source: 'Loan (G)',
+      subSource: '( Udhari )',
+      outAmt: 50000,
+      inAmt: 0,
+      balAmt: 8697910,
+      outGold: 0,
+      inGold: 0,
+      balGold: 549.009,
+      outSilver: 0,
+      inSilver: 0,
+      balSilver: 151498.093,
     },
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-2">
-        <div className="flex items-center space-x-2">
-          <div className="h-9 w-9 rounded-lg bg-brand-maroon text-brand-gold flex items-center justify-center">
-            <BookOpen className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-              DAY BOOK (दैनिक बहीखाता)
-            </h1>
-            <p className="text-xs text-slate-500">
-              Real-time triple-currency transaction ledger auditing Cash (₹), Gold (gm), and Silver (gm) simultaneously
-            </p>
-          </div>
+    <div className="space-y-3">
+      {/* Breadcrumb Bar */}
+      <div className="flex items-center space-x-2 text-xs font-bold text-white">
+        <div className="bg-brand-maroon px-3 py-1 rounded-l-md">Day Book</div>
+        <div className="bg-rose-700 px-3 py-1 rounded-r-md">Detail Day Book</div>
+      </div>
+
+      {/* Top Header Controls Bar Matching reference/day_book_1440.png */}
+      <div className="bg-white p-3 rounded-xl border border-slate-300 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div>
+          <h2 className="text-base font-extrabold text-slate-800 leading-tight">
+            Detailed Day Book
+          </h2>
+          <p className="text-[11px] text-slate-500">
+            Track cash, gold, and silver ledger flows instantly.
+          </p>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs"
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-900 text-amber-300 font-bold rounded-lg text-xs hover:bg-black shadow-xs"
+          >
+            <Lock className="h-3 w-3" />
+            <span>OPENING STOCK</span>
+          </button>
+
+          <button
+            type="button"
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-900 text-amber-300 font-bold rounded-lg text-xs hover:bg-black shadow-xs"
+          >
+            <Lock className="h-3 w-3" />
+            <span>CLOSING STOCK</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center space-x-1 px-3 py-1.5 bg-brand-maroon text-white font-bold rounded-lg text-xs hover:bg-brand-maroon-dark shadow-xs"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            <span>Print</span>
+          </button>
+
+          <button
+            type="button"
+            className="px-3 py-1.5 bg-brand-maroon text-white font-bold rounded-lg text-xs hover:bg-brand-maroon-dark shadow-xs"
+          >
+            Old Records
+          </button>
+
+          <button
+            type="button"
+            className="h-7 w-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-300 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Row */}
+      <div className="bg-white p-2.5 rounded-xl border border-slate-300 shadow-xs flex flex-wrap items-center gap-2 text-xs">
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="px-2.5 py-1.5 rounded border border-slate-300 font-medium text-slate-700 text-xs"
         >
-          <Printer className="h-3.5 w-3.5" />
-          <span>Print Today's Day Book (A4)</span>
-        </button>
+          <option value="Select Month">Select Month</option>
+          <option value="November 2026">November 2026</option>
+          <option value="October 2026">October 2026</option>
+        </select>
+
+        <div className="flex items-center space-x-1">
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="px-2 py-1 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+          />
+        </div>
+
+        <div className="flex items-center space-x-1">
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="px-2 py-1 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+          />
+        </div>
+
+        <select
+          value={selectedAction}
+          onChange={(e) => setSelectedAction(e.target.value)}
+          className="px-2.5 py-1.5 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+        >
+          <option value="All Actions">All Actions</option>
+          <option value="Debit">Debit</option>
+          <option value="Credit">Credit</option>
+        </select>
+
+        <select
+          value={selectedSource}
+          onChange={(e) => setSelectedSource(e.target.value)}
+          className="px-2.5 py-1.5 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+        >
+          <option value="All Sources">All Sources</option>
+          <option value="Exchange">Exchange</option>
+          <option value="Loan (Udhari)">Loan (Udhari)</option>
+          <option value="Buy/Sell">Buy/Sell</option>
+          <option value="Expense/Income">Expense/Income</option>
+        </select>
+
+        <select
+          value={selectedCustomer}
+          onChange={(e) => setSelectedCustomer(e.target.value)}
+          className="px-2.5 py-1.5 rounded border border-slate-300 font-medium text-slate-700 text-xs"
+        >
+          <option value="All Customers">All Customers</option>
+          <option value="386 / RAHUL 1">386 / RAHUL 1</option>
+          <option value="100 / XYZ">100 / XYZ</option>
+          <option value="99 / Bank (Online)">99 / Bank (Online)</option>
+        </select>
       </div>
 
-      {/* Triple-Currency Balance Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-500 uppercase block">
-            Closing Cash in Vault
-          </span>
-          <span className="text-xl font-black text-slate-900 mt-1 block">
-            ₹ 26,68,437.90
-          </span>
-          <span className="text-[10px] text-emerald-600 font-semibold">
-            Today Net Inflow: +₹ 1,28,437.90
-          </span>
-        </div>
+      {/* Two-Tier Table Matching reference/day_book_1440.png */}
+      <div className="bg-white rounded-xl border border-slate-300 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              {/* Super Header Tier */}
+              <tr className="bg-slate-700 text-white font-bold text-center">
+                <th colSpan={4} className="py-2 px-3 border border-slate-600 bg-slate-700"></th>
+                <th colSpan={3} className="py-2 px-3 border border-slate-600 bg-slate-800 text-emerald-300 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th colSpan={3} className="py-2 px-3 border border-slate-600 bg-slate-800 text-amber-300 uppercase tracking-wider">
+                  Gold
+                </th>
+                <th colSpan={3} className="py-2 px-3 border border-slate-600 bg-slate-800 text-slate-200 uppercase tracking-wider">
+                  Silver
+                </th>
+                <th className="py-2 px-3 border border-slate-600 bg-slate-700">Action</th>
+              </tr>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-500 uppercase block">
-            Closing 99.9 Gold Vault
-          </span>
-          <span className="text-xl font-black text-amber-700 mt-1 block">
-            333.192 gm
-          </span>
-          <span className="text-[10px] text-rose-600 font-semibold">
-            Today Net Sales: -17.058 gm
-          </span>
-        </div>
+              {/* Secondary Column Headers */}
+              <tr className="bg-slate-600 text-white font-semibold text-center border-b border-slate-500">
+                <th className="py-2 px-2 border border-slate-500 w-10">SN</th>
+                <th className="py-2 px-3 border border-slate-500 w-28">Date/Time</th>
+                <th className="py-2 px-3 border border-slate-500 w-36">C. No/C. Name</th>
+                <th className="py-2 px-3 border border-slate-500 w-48">Source</th>
+                <th className="py-2 px-3 border border-slate-500 w-24">Out Amt.(-)</th>
+                <th className="py-2 px-3 border border-slate-500 w-24">In Amt.(+)</th>
+                <th className="py-2 px-3 border border-slate-500 w-28">Bal. Amt.</th>
+                <th className="py-2 px-3 border border-slate-500 w-24">Out Gold(-)</th>
+                <th className="py-2 px-3 border border-slate-500 w-24">In Gold(+)</th>
+                <th className="py-2 px-3 border border-slate-500 w-28">Bal. Gold</th>
+                <th className="py-2 px-3 border border-slate-500 w-24">Out Silver(-)</th>
+                <th className="py-2 px-3 border border-slate-500 w-24">In Silver(+)</th>
+                <th className="py-2 px-3 border border-slate-500 w-28">Bal. Silver</th>
+                <th className="py-2 px-2 border border-slate-500 w-12">Action</th>
+              </tr>
+            </thead>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-500 uppercase block">
-            Closing Physical Silver
-          </span>
-          <span className="text-xl font-black text-slate-800 mt-1 block">
-            12.500 kg
-          </span>
-          <span className="text-[10px] text-slate-400 font-semibold">
-            Zero silver movement today
-          </span>
+            <tbody className="divide-y divide-slate-200 text-center">
+              {rows.map((r) => (
+                <tr key={r.sn} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-2 px-2 border-r border-slate-200 font-bold text-slate-700">{r.sn}</td>
+                  <td className="py-2 px-3 border-r border-slate-200 text-slate-600 font-mono text-[11px]">{r.dateTime}</td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-semibold text-slate-800">{r.customer}</td>
+                  <td className="py-2 px-3 border-r border-slate-200 text-left">
+                    <span className="font-bold text-slate-800 block">{r.source}</span>
+                    {r.subSource && (
+                      <span className={`text-[10px] block ${r.subSource.includes('Udhari') ? 'text-amber-800 font-bold' : 'text-slate-500'}`}>
+                        {r.subSource}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono text-rose-600 font-bold">
+                    {r.outAmt > 0 ? `${r.outAmt.toLocaleString('en-IN')} ₹` : '-'}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono text-emerald-700 font-bold">
+                    {r.inAmt > 0 ? `${r.inAmt.toLocaleString('en-IN')} ₹` : '-'}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono font-bold text-slate-900">
+                    {r.balAmt.toLocaleString('en-IN')} ₹
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono text-rose-600 font-bold">
+                    {r.outGold > 0 ? `${r.outGold.toFixed(3)} gm` : '-'}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono text-emerald-700 font-bold">
+                    {r.inGold > 0 ? `${r.inGold.toFixed(3)} gm` : '-'}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono font-bold text-slate-900">
+                    {r.balGold.toFixed(3)} gm
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono text-rose-600 font-bold">
+                    {r.outSilver > 0 ? `${r.outSilver.toFixed(3)} gm` : '-'}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono text-emerald-700 font-bold">
+                    {r.inSilver > 0 ? `${r.inSilver.toFixed(3)} gm` : '-'}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-200 font-mono font-bold text-slate-900">
+                    {r.balSilver.toFixed(3)} gm
+                  </td>
+                  <td className="py-2 px-2 text-center text-slate-400">
+                    -
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+
+            {/* Footer Summary Matching reference/day_book_1440.png */}
+            <tfoot>
+              <tr className="bg-slate-600 text-white font-bold text-center border-t-2 border-slate-400">
+                <td colSpan={4} className="py-2 px-3 border border-slate-500 bg-slate-600"></td>
+                <td className="py-2 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                  17,91,061 ₹
+                </td>
+                <td className="py-2 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                  4,84,195 ₹
+                </td>
+                <td className="py-2 px-3 border border-slate-500 bg-slate-600"></td>
+                <td className="py-2 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                  232.890 gm
+                </td>
+                <td className="py-2 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                  553.000 gm
+                </td>
+                <td className="py-2 px-3 border border-slate-500 bg-slate-600"></td>
+                <td className="py-2 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                  1,506.176 gm
+                </td>
+                <td className="py-2 px-3 border border-slate-500 bg-white text-slate-900 font-mono font-black">
+                  553.088 gm
+                </td>
+                <td className="py-2 px-3 border border-slate-500 bg-slate-600"></td>
+                <td className="py-2 px-2 border border-slate-500 bg-white text-center">
+                  <button
+                    onClick={() => window.print()}
+                    className="p-1 rounded text-brand-maroon hover:bg-rose-50 inline-flex items-center justify-center"
+                    title="Print Day Book"
+                  >
+                    <Printer className="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
-
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={entries}
-        searchPlaceholder="Search day book entries..."
-        exportFileName="day_book_daily.csv"
-      />
     </div>
   );
 };
-

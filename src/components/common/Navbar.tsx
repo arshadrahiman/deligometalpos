@@ -31,7 +31,7 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { name: 'EXCHANGE', sub: 'बदला/ पलटा', path: '/exchange' },
     { name: 'BUY-SELL', sub: 'खरीद बिक्री', path: '/buy-sell' },
-    { name: 'LOAN', sub: 'उधार', path: '/loan' },
+    { name: 'UDHARI', sub: 'उधार / उधारी', path: '/udhari' },
     { name: 'LEDGER', sub: 'खाता बही', path: '/ledger' },
     { name: 'CUSTOMER', sub: 'ग्राहक', path: '/customers' },
     { name: 'EXPENSE | INCOME', sub: 'खर्च | आय', path: '/expenses' },
@@ -40,6 +40,8 @@ export const Navbar: React.FC = () => {
   ];
 
   const moreServices = [
+    { name: 'Udhari & Loan (उधार खाता)', path: '/udhari' },
+    { name: 'Ledger Summary (खाता बही)', path: '/ledger' },
     { name: 'Refinery Billing', path: '/billing/refinery' },
     { name: 'Bullion Billing', path: '/billing/bullion' },
     { name: 'Hallmark Billing', path: '/billing/hallmark' },
