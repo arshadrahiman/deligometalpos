@@ -48,5 +48,15 @@ export interface ExtraSettings {
   is_share: 'yes' | 'no';
   is_set_stock_password: 'yes' | 'no';
   en_pwd?: string;
+
+  // 6. Dynamic Theme & Color Configuration (Navy Blue & Yellow)
+  theme_preset: 'navy_yellow' | 'royal_blue' | 'deep_ocean' | 'midnight' | 'classic_maroon' | 'custom';
+  primary_color: string;
+  primary_dark: string;
+  primary_light: string;
+  accent_color: string;
+  accent_dark: string;
+  nav_color: string;
+  surface_color: string;
 }
 

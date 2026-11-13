@@ -1,31 +1,31 @@
-# Design Tokens & Styling Guidelines
+# Design Tokens & Dynamic Theme Guidelines
 
-This document specifies the exact visual language, color palette, typography, component styling, and interactive states for Deligo Technologies ERP.
+This document specifies the visual language, dynamic color palette, typography, component styling, and interactive states for Deligo Technologies ERP.
 
 ---
 
-## 1. Color Palette
+## 1. Dynamic Color Architecture (Navy Blue & Yellow Theme)
 
-### Primary & Brand Colors
+The application features an executive **Navy Blue & Yellow** design system powered by CSS Custom Properties (`:root`) and live synchronization with Extra Settings.
+
+### Primary Brand Palette (Default Theme)
 | Token Name | Hex Code | RGB | Tailwind Class Equivalent | Usage |
 | :--- | :--- | :--- | :--- | :--- |
-| `color-brand-maroon` | `#8d2c24` | `rgb(141, 44, 36)` | `bg-[#8d2c24]`, `text-[#8d2c24]` | Primary brand accent, active navigation items, prominent submit buttons, section headers |
-| `color-brand-maroon-dark`| `#6e211b` | `rgb(110, 33, 27)` | `bg-[#6e211b]` | Button hover, active tab borders |
-| `color-brand-blue` | `#1877f2` | `rgb(24, 119, 242)` | `bg-[#1877f2]`, `text-[#1877f2]` | Login button, primary CTA, download actions |
-| `color-gold-accent` | `#ffd700` | `rgb(255, 215, 0)` | `bg-[#ffd700]`, `text-[#ffd700]` | Gold stock pill, active tab bottom underline, high-purity badges |
-| `color-gold-dark` | `#d4af37` | `rgb(212, 175, 55)` | `text-[#d4af37]` | Fine gold metrics, card header icons |
+| `color-brand-primary` | `#0f2744` | `rgb(15, 39, 68)` | `bg-brand-primary`, `text-brand-primary` | Primary brand identity, active navigation buttons, submit CTAs, section headers |
+| `color-brand-primary-dark` | `#0a192f` | `rgb(10, 25, 47)` | `bg-brand-primary-dark` | Hover states, active borders, sticky top navigation bar |
+| `color-brand-primary-light` | `#1e3a5f` | `rgb(30, 58, 95)` | `bg-brand-primary-light` | Secondary headers, card borders, interactive focus rings |
+| `color-brand-secondary` (Yellow) | `#ffd700` | `rgb(255, 215, 0)` | `bg-brand-secondary`, `bg-brand-yellow` | Yellow Stock button, bullion accents, Gold mode indicators, active underlines |
+| `color-brand-secondary-dark` | `#eab308` | `rgb(234, 179, 8)` | `bg-brand-secondary-dark` | Yellow hover states, active borders |
+| `color-brand-nav` | `#0a192f` | `rgb(10, 25, 47)` | `bg-brand-nav` | Sticky top navigation bar, modal headers, footer |
+| `color-brand-surface` | `#f0f4f9` | `rgb(240, 244, 249)` | `bg-brand-surface` | Application background canvas, slate contrast |
 
-### Navigation & Neutrals
-| Token Name | Hex Code | RGB | Tailwind Class Equivalent | Usage |
-| :--- | :--- | :--- | :--- | :--- |
-| `color-nav-bg` | `#302929` | `rgb(48, 41, 41)` | `bg-[#302929]` | Sticky top navigation bar, footer bar |
-| `color-nav-item-active`| `#8d2c24` | `rgb(141, 44, 36)` | `bg-[#8d2c24]` | Current active navigation tab |
-| `color-surface-bg` | `#f4f6f9` | `rgb(244, 246, 249)`| `bg-slate-100` | Background of all dashboard and operational screens |
-| `color-card-bg` | `#ffffff` | `rgb(255, 255, 255)`| `bg-white` | Card bodies, form containers, table wrappers |
-| `color-text-main` | `#212529` | `rgb(33, 37, 41)` | `text-slate-800` | Primary headings, table text, input values |
-| `color-text-muted` | `#6c757d` | `rgb(108, 117, 125)`| `text-slate-500` | Secondary labels, placeholders, timestamps |
-| `color-border-light` | `#e5e5e5` | `rgb(229, 229, 229)`| `border-gray-200` | Input borders, card dividers |
-| `color-border-dark` | `#dee2e6` | `rgb(222, 226, 230)`| `border-gray-300` | Table cell borders, modal borders |
+### Dynamic Theme Presets Available in Extra Settings
+1. **Navy Blue & Yellow (Default)**: `#0f2744` primary, `#ffd700` yellow accent, `#0a192f` deep nav.
+2. **Royal Navy & Canary Yellow**: `#1e3a8a` primary, `#facc15` sharp canary yellow, `#172554` midnight nav.
+3. **Deep Ocean & Amber Gold**: `#0c4a6e` primary, `#fbbf24` amber gold, `#082f49` ocean nav.
+4. **Midnight Navy & Cyber Yellow**: `#111827` primary, `#eab308` high-vis yellow, `#030712` black nav.
+5. **Classic Maroon & Gold (Legacy)**: `#8d2c24` primary, `#ffd700` gold accent, `#302929` dark nav.
+6. **Custom Palette**: User-defined 6-color palette with native color pickers and instant DOM injection.
 
 ### Semantic & Status Colors
 | Token Name | Hex Code | Purpose |

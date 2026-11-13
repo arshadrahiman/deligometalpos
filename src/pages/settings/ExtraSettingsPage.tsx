@@ -13,13 +13,15 @@ import {
   Save,
   RotateCcw,
   CheckCircle2,
+  Palette,
 } from 'lucide-react';
+import { ThemeConfigSection } from '../../components/settings/ThemeConfigSection';
 
 export const ExtraSettingsPage: React.FC = () => {
   const { showToast } = useUIStore();
   const { user, login } = useAuthStore();
 
-  const [activeTab, setActiveTab] = useState<'SHOP' | 'PRINT' | 'CALC' | 'DISPLAY' | 'SECURITY'>(
+  const [activeTab, setActiveTab] = useState<'SHOP' | 'PRINT' | 'CALC' | 'DISPLAY' | 'SECURITY' | 'THEME'>(
     'SHOP'
   );
 
@@ -150,6 +152,19 @@ export const ExtraSettingsPage: React.FC = () => {
           >
             <ShieldCheck className="h-4 w-4" />
             <span>Security & WhatsApp (सुरक्षा)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('THEME')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-all shrink-0 ${
+              activeTab === 'THEME'
+                ? 'bg-brand-primary text-brand-secondary shadow-xs font-black'
+                : 'text-slate-600 hover:text-brand-primary hover:bg-white'
+            }`}
+          >
+            <Palette className="h-4 w-4" />
+            <span>Theme & Colors (थीम एवं रंग)</span>
           </button>
         </div>
 
@@ -552,6 +567,13 @@ export const ExtraSettingsPage: React.FC = () => {
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 6. Dynamic Theme & Colors Tab */}
+          {activeTab === 'THEME' && (
+            <div className="space-y-4">
+              <ThemeConfigSection onSave={handleSave} />
             </div>
           )}
 

@@ -13,7 +13,9 @@ import {
   ShieldCheck,
   Save,
   RotateCcw,
+  Palette,
 } from 'lucide-react';
+import { ThemeConfigSection } from './ThemeConfigSection';
 
 interface ExtraSettingsModalProps {
   isOpen: boolean;
@@ -28,7 +30,7 @@ export const ExtraSettingsModal: React.FC<ExtraSettingsModalProps> = ({
 }) => {
   const { showToast } = useUIStore();
   const { user, login } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'SHOP' | 'PRINT' | 'CALC' | 'DISPLAY' | 'SECURITY'>(
+  const [activeTab, setActiveTab] = useState<'SHOP' | 'PRINT' | 'CALC' | 'DISPLAY' | 'SECURITY' | 'THEME'>(
     'SHOP'
   );
 
@@ -136,6 +138,19 @@ export const ExtraSettingsModal: React.FC<ExtraSettingsModalProps> = ({
           >
             <ShieldCheck className="h-4 w-4" />
             <span>Security & WhatsApp (सुरक्षा)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('THEME')}
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-t-lg transition-all shrink-0 ${
+              activeTab === 'THEME'
+                ? 'bg-brand-primary text-brand-secondary shadow-xs font-black'
+                : 'text-slate-600 hover:text-brand-primary hover:bg-slate-100'
+            }`}
+          >
+            <Palette className="h-4 w-4" />
+            <span>Theme & Colors (थीम)</span>
           </button>
         </div>
 
@@ -509,6 +524,13 @@ export const ExtraSettingsModal: React.FC<ExtraSettingsModalProps> = ({
                 className="w-full px-3 py-1.5 rounded border border-slate-300"
               />
             </div>
+          </div>
+        )}
+
+        {/* Tab 6: Dynamic Theme & Colors */}
+        {activeTab === 'THEME' && (
+          <div className="py-1">
+            <ThemeConfigSection onSave={handleSave} />
           </div>
         )}
 

@@ -1,3 +1,12 @@
+function withOpacity(variableName, fallbackHex) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgba(var(${variableName}-rgb), ${opacityValue})`;
+    }
+    return `var(${variableName}, ${fallbackHex})`;
+  };
+}
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -8,13 +17,19 @@ export default {
     extend: {
       colors: {
         brand: {
-          maroon: '#8d2c24',
-          'maroon-dark': '#6e211b',
+          primary: withOpacity('--brand-primary', '#0f2744'),
+          'primary-dark': withOpacity('--brand-primary-dark', '#0a192f'),
+          'primary-light': withOpacity('--brand-primary-light', '#1e3a5f'),
+          secondary: withOpacity('--brand-secondary', '#ffd700'),
+          'secondary-dark': withOpacity('--brand-secondary-dark', '#eab308'),
+          yellow: withOpacity('--brand-secondary', '#ffd700'),
+          gold: withOpacity('--brand-secondary', '#ffd700'),
+          'gold-dark': withOpacity('--brand-secondary-dark', '#d4af37'),
+          maroon: withOpacity('--brand-primary', '#0f2744'),
+          'maroon-dark': withOpacity('--brand-primary-dark', '#0a192f'),
           blue: '#1877f2',
-          gold: '#ffd700',
-          'gold-dark': '#d4af37',
-          nav: '#302929',
-          surface: '#f4f6f9',
+          nav: withOpacity('--brand-nav', '#0a192f'),
+          surface: 'var(--brand-surface, #f0f4f9)',
         },
       },
       fontFamily: {

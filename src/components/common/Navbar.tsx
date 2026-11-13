@@ -53,7 +53,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#302929] text-white shadow-md select-none border-b border-black/20">
+    <nav className="sticky top-0 z-50 bg-brand-nav text-white shadow-md select-none border-b border-black/20">
       <div className="mx-auto flex h-14 max-w-full items-center justify-between px-3 lg:px-4">
         {/* Left: Brand / Shop Name */}
         <Link to="/" className="flex items-center space-x-2 group shrink-0 mr-2">
@@ -185,7 +185,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="xl:hidden border-t border-slate-700 bg-[#302929] px-4 py-3 space-y-2">
+        <div className="xl:hidden border-t border-slate-700 bg-brand-nav px-4 py-3 space-y-2">
           {/* Mobile Metal Toggle & Stock Row */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-700">
             <span className="text-xs font-bold text-slate-300">Active Metal:</span>

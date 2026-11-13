@@ -3,6 +3,25 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --brand-primary: #0f2744;
+    --brand-primary-rgb: 15, 39, 68;
+    --brand-primary-dark: #0a192f;
+    --brand-primary-dark-rgb: 10, 25, 47;
+    --brand-primary-light: #1e3a5f;
+    --brand-primary-light-rgb: 30, 58, 95;
+
+    --brand-secondary: #ffd700;
+    --brand-secondary-rgb: 255, 215, 0;
+    --brand-secondary-dark: #eab308;
+    --brand-secondary-dark-rgb: 234, 179, 8;
+
+    --brand-nav: #0a192f;
+    --brand-nav-rgb: 10, 25, 47;
+
+    --brand-surface: #f0f4f9;
+  }
+
   body {
     @apply font-poppins text-slate-800 bg-brand-surface antialiased;
   }

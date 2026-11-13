@@ -355,3 +355,4 @@ export const StockPage: React.FC = () => {
     </div>
   );
 };
+

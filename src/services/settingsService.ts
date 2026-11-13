@@ -52,6 +52,16 @@ export const DEFAULT_EXTRA_SETTINGS: ExtraSettings = {
   is_whatsapp: 'yes',
   is_share: 'yes',
   is_set_stock_password: 'no',
+
+  // 6. Dynamic Theme & Color Settings (Navy Blue & Yellow Default)
+  theme_preset: 'navy_yellow',
+  primary_color: '#0f2744',
+  primary_dark: '#0a192f',
+  primary_light: '#1e3a5f',
+  accent_color: '#ffd700',
+  accent_dark: '#eab308',
+  nav_color: '#0a192f',
+  surface_color: '#f0f4f9',
 };
 
 export const settingsService = {
