@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Customer, LoanEntry } from '../../types';
 import { loanService } from '../../services/loanService';
 import { useUIStore } from '../../store/useUIStore';
+import { useMetalStore } from '../../store/useMetalStore';
 import {
   convertCashToGold,
   convertGoldToCash,
+  convertCashToSilver,
+  convertSilverToCash,
 } from '../../utils/calculations/bullionMath';
 import {
   BookOpen,
@@ -38,6 +41,8 @@ interface ReferenceLoanListItem {
 
 export const LoanPage: React.FC = () => {
   const { showToast, openBhavcutModal } = useUIStore();
+  const { metalMode } = useMetalStore();
+  const isSilver = metalMode === 'SILVER';
 
   const [activeTab, setActiveTab] = useState<'FORM' | 'LIST'>('FORM');
   const [entries, setEntries] = useState<LoanEntry[]>([]);
@@ -46,9 +51,9 @@ export const LoanPage: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('CUST-100');
   const [customerSearch, setCustomerSearch] = useState<string>('100 / XYZ');
 
-  // Gold Inputs: Udhar (-) vs Jama (+)
-  const [goldUdhar, setGoldUdhar] = useState<number>(0.0);
-  const [goldJama, setGoldJama] = useState<number>(0.0);
+  // Active Metal Inputs: Udhar (-) vs Jama (+)
+  const [metalUdhar, setMetalUdhar] = useState<number>(0.0);
+  const [metalJama, setMetalJama] = useState<number>(0.0);
 
   // Cash Inputs: Udhar (-) vs Jama (+)
   const [cashUdhar, setCashUdhar] = useState<number>(0);
@@ -61,10 +66,14 @@ export const LoanPage: React.FC = () => {
 
   // Inline Bhavcut
   const [bhavcutAmt, setBhavcutAmt] = useState<number>(0);
-  const [bhavcutGold, setBhavcutGold] = useState<number>(0);
-  const [rate, setRate] = useState<number>(80000);
+  const [bhavcutMetal, setBhavcutMetal] = useState<number>(0);
+  const [rate, setRate] = useState<number>(isSilver ? 95000 : 80000);
 
   const [narration, setNarration] = useState<string>('');
+
+  useEffect(() => {
+    setRate(isSilver ? 95000 : 80000);
+  }, [isSilver]);
 
   // List View Filters
   const [fromDate, setFromDate] = useState<string>('2026-11-11');
@@ -171,26 +180,27 @@ export const LoanPage: React.FC = () => {
   const oldSilverAmt = 0;
 
   // Real-time calculations matching reference
-  const netGoldDelta = Math.round((goldJama - goldUdhar) * 1000) / 1000;
-  const finalGold = Math.round((oldGold + netGoldDelta) * 1000) / 1000;
+  const currentOldMetal = isSilver ? oldSilver : oldGold;
+  const netMetalDelta = Math.round((metalJama - metalUdhar) * 1000) / 1000;
+  const finalMetal = Math.round((currentOldMetal + netMetalDelta) * 1000) / 1000;
 
   const totalCashUdhar = (cashUdhar || 0) + (onlineUdhar || 0) + (bank2Udhar || 0);
   const totalCashJama = (cashJama || 0) + (onlineJama || 0) + (bank2Jama || 0);
   const netCashDelta = totalCashJama - totalCashUdhar;
   const finalCash = Math.round((oldCash + netCashDelta) * 100) / 100;
 
-  const handleInlineBhavcutAmtToGold = () => {
+  const handleInlineBhavcutAmtToMetal = () => {
     if (!bhavcutAmt || !rate) return;
-    const g = convertCashToGold(bhavcutAmt, rate);
-    setBhavcutGold(g);
-    showToast(`Converted ₹${bhavcutAmt.toLocaleString('en-IN')} to ${g.toFixed(3)} gm Gold`);
+    const g = isSilver ? convertCashToSilver(bhavcutAmt, rate) : convertCashToGold(bhavcutAmt, rate);
+    setBhavcutMetal(g);
+    showToast(`Converted ₹${bhavcutAmt.toLocaleString('en-IN')} to ${g.toFixed(3)} gm ${isSilver ? 'Silver' : 'Gold'}`);
   };
 
-  const handleInlineBhavcutGoldToAmt = () => {
-    if (!bhavcutGold || !rate) return;
-    const c = convertGoldToCash(bhavcutGold, rate);
+  const handleInlineBhavcutMetalToAmt = () => {
+    if (!bhavcutMetal || !rate) return;
+    const c = isSilver ? convertSilverToCash(bhavcutMetal, rate) : convertGoldToCash(bhavcutMetal, rate);
     setBhavcutAmt(c);
-    showToast(`Converted ${bhavcutGold.toFixed(3)} gm Gold to ₹${c.toLocaleString('en-IN')}`);
+    showToast(`Converted ${bhavcutMetal.toFixed(3)} gm ${isSilver ? 'Silver' : 'Gold'} to ₹${c.toLocaleString('en-IN')}`);
   };
 
   const handleSave = async () => {
@@ -199,10 +209,10 @@ export const LoanPage: React.FC = () => {
       customerNo: 100,
       customerName: customerSearch,
       gold: {
-        oldBalance: oldGold,
-        type: goldJama > 0 ? 'JAMA' : 'UDHAR',
-        transactionWeight: goldJama > 0 ? goldJama : goldUdhar,
-        newBalance: finalGold,
+        oldBalance: isSilver ? oldGold : currentOldMetal,
+        type: metalJama > 0 ? 'JAMA' : 'UDHAR',
+        transactionWeight: metalJama > 0 ? metalJama : metalUdhar,
+        newBalance: isSilver ? oldGold : finalMetal,
       },
       cash: {
         oldBalance: oldCash,
@@ -212,13 +222,18 @@ export const LoanPage: React.FC = () => {
         bank2Amount: totalCashJama > 0 ? bank2Jama : bank2Udhar,
         newBalance: finalCash,
       },
+      silver: isSilver ? {
+        oldBalance: oldSilver,
+        transactionWeight: metalJama > 0 ? metalJama : metalUdhar,
+        newBalance: finalMetal,
+      } : undefined,
       narration: narration || 'Udhari / Loan account entry',
     });
 
     showToast(`Udhari ledger entry #${newEntry.transactionNo} created!`);
     loadEntries();
-    setGoldUdhar(0);
-    setGoldJama(0);
+    setMetalUdhar(0);
+    setMetalJama(0);
     setCashUdhar(0);
     setOnlineUdhar(0);
     setBank2Udhar(0);
@@ -284,11 +299,11 @@ export const LoanPage: React.FC = () => {
 
           {/* Dual Panel Layout: (सोना) GOLD on Left, (पैसे) CASH on Right */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Box 1: (सोना) GOLD */}
-            <div className="bg-white rounded-xl border-2 border-amber-300 shadow-xs p-4 space-y-4">
+            {/* Box 1: (सोना) GOLD vs (चाँदी) SILVER */}
+            <div className={`bg-white rounded-xl border-2 ${isSilver ? 'border-slate-300' : 'border-amber-300'} shadow-xs p-4 space-y-4`}>
               <div className="text-center">
                 <h3 className="text-base font-black text-slate-900 tracking-wide">
-                  (सोना) GOLD
+                  {isSilver ? '(चाँदी) SILVER' : '(सोना) GOLD'}
                 </h3>
               </div>
 
@@ -299,17 +314,17 @@ export const LoanPage: React.FC = () => {
                     (पुराना) OLD :
                   </span>
                   <div className="flex-1 px-3 py-1.5 rounded border border-emerald-400 bg-emerald-50/30 text-emerald-800 font-bold font-mono">
-                    {oldGold.toFixed(3)}
+                    {isSilver ? oldSilver.toFixed(3) : oldGold.toFixed(3)}
                   </div>
                   <span className="font-bold text-slate-700 w-10 pl-2">gm</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-700 w-28 text-right pr-2">
-                    Silver Old
+                    {isSilver ? 'Gold Old' : 'Silver Old'}
                   </span>
                   <div className="flex-1 px-3 py-1.5 rounded border border-rose-400 bg-rose-50/30 text-rose-700 font-bold font-mono">
-                    {oldSilver.toFixed(3)}
+                    {isSilver ? oldGold.toFixed(3) : oldSilver.toFixed(3)}
                   </div>
                   <span className="font-bold text-slate-700 w-10 pl-2">gm</span>
                 </div>
@@ -326,8 +341,8 @@ export const LoanPage: React.FC = () => {
                       <input
                         type="number"
                         step="0.001"
-                        value={goldUdhar || ''}
-                        onChange={(e) => setGoldUdhar(Number(e.target.value))}
+                        value={metalUdhar || ''}
+                        onChange={(e) => setMetalUdhar(Number(e.target.value))}
                         placeholder="0.000"
                         className="w-full px-2.5 py-1.5 text-xs rounded border border-rose-400 text-rose-700 font-bold font-mono focus:outline-none"
                       />
@@ -347,8 +362,8 @@ export const LoanPage: React.FC = () => {
                       <input
                         type="number"
                         step="0.001"
-                        value={goldJama || ''}
-                        onChange={(e) => setGoldJama(Number(e.target.value))}
+                        value={metalJama || ''}
+                        onChange={(e) => setMetalJama(Number(e.target.value))}
                         placeholder="0.000"
                         className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-400 text-emerald-700 font-bold font-mono focus:outline-none"
                       />
@@ -358,14 +373,14 @@ export const LoanPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* FINAL GOLD Row */}
+              {/* FINAL Row */}
               <div className="pt-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-900 w-28 text-right pr-2">
                     FINAL :
                   </span>
                   <div className="flex-1 px-3 py-2 rounded-lg border-2 border-emerald-400 bg-emerald-50/50 text-emerald-900 font-extrabold font-mono text-sm">
-                    {finalGold.toFixed(3)}
+                    {((isSilver ? oldSilver : oldGold) + (metalJama - metalUdhar)).toFixed(3)}
                   </div>
                   <span className="font-bold text-slate-700 w-10 pl-2">gm</span>
                 </div>
@@ -519,7 +534,7 @@ export const LoanPage: React.FC = () => {
               <div className="flex items-center space-x-2 bg-white px-3 py-1 rounded-full border border-slate-300 shadow-xs">
                 <button
                   type="button"
-                  onClick={handleInlineBhavcutAmtToGold}
+                  onClick={handleInlineBhavcutAmtToMetal}
                   className="p-1 rounded-full bg-brand-maroon text-white hover:bg-brand-maroon-dark"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
@@ -531,10 +546,12 @@ export const LoanPage: React.FC = () => {
                   placeholder="0"
                   className="w-24 text-center font-bold text-xs border-b border-slate-300 focus:outline-none"
                 />
-                <span className="text-xs font-bold text-slate-600">₹/10gm</span>
+                <span className="text-xs font-bold text-slate-600">
+                  {isSilver ? '₹/1kg' : '₹/10gm'}
+                </span>
                 <button
                   type="button"
-                  onClick={handleInlineBhavcutGoldToAmt}
+                  onClick={handleInlineBhavcutMetalToAmt}
                   className="p-1 rounded-full bg-brand-maroon text-white hover:bg-brand-maroon-dark"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
@@ -560,7 +577,7 @@ export const LoanPage: React.FC = () => {
                     const text = encodeURIComponent(
                       `*DELIGO TECHNOLOGIES - UDHARI STATEMENT*\n` +
                       `Customer: ${customerSearch}\n` +
-                      `Gold Balance: ${finalGold.toFixed(3)} gm\n` +
+                      `${isSilver ? 'Silver' : 'Gold'} Balance: ${finalMetal.toFixed(3)} gm\n` +
                       `Cash Balance: ₹ ${finalCash.toLocaleString('en-IN')}`
                     );
                     window.open(`https://api.whatsapp.com/send?phone=9645808999&text=${text}`, '_blank');

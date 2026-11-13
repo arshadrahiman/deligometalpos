@@ -51,7 +51,7 @@ export interface ExchangeTransaction {
   dateTime: string;
   weight: number;
   touch: number;
-  sample: 'lagdi' | 'Rava' | '99.9' | 'Dhali' | 'Depa' | 'Zevar' | 'Others';
+  sample: 'lagdi' | 'Rava' | '99.9' | 'Dhali' | 'Depa' | 'Zevar' | 'Chandi Sil' | 'Pata' | 'Chandi Katori' | 'Silver Bar 999' | 'Payal/Bichhiya' | 'Others' | string;
   fineGold: number;
   extraGold: number;
   afterFine: number;

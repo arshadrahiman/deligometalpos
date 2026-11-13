@@ -3,6 +3,7 @@ import { Customer, BuySellTransaction } from '../../types';
 import { buySellService } from '../../services/buySellService';
 import { useStockStore } from '../../store/useStockStore';
 import { useUIStore } from '../../store/useUIStore';
+import { useMetalStore } from '../../store/useMetalStore';
 import {
   calculateBuySellNet,
   convertCashToGold,
@@ -32,6 +33,8 @@ import {
 export const BuySellPage: React.FC = () => {
   const { summary } = useStockStore();
   const { showToast, openBhavcutModal } = useUIStore();
+  const { metalMode } = useMetalStore();
+  const isSilver = metalMode === 'SILVER';
 
   const [activeTab, setActiveTab] = useState<'FORM' | 'LIST'>('FORM');
   const [txnType, setTxnType] = useState<'BUY' | 'SELL'>('BUY');
@@ -40,10 +43,22 @@ export const BuySellPage: React.FC = () => {
   // Form Fields
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [weight, setWeight] = useState<number>(0.0);
-  const [rate, setRate] = useState<number>(144500);
-  const [saleRate, setSaleRate] = useState<number>(144500);
-  const [purchaseRate, setPurchaseRate] = useState<number>(140000);
+  const [rate, setRate] = useState<number>(isSilver ? 98000 : 144500);
+  const [saleRate, setSaleRate] = useState<number>(isSilver ? 98000 : 144500);
+  const [purchaseRate, setPurchaseRate] = useState<number>(isSilver ? 95000 : 140000);
   const [discount, setDiscount] = useState<number>(0.0);
+
+  useEffect(() => {
+    if (isSilver) {
+      setRate(98000);
+      setSaleRate(98000);
+      setPurchaseRate(95000);
+    } else {
+      setRate(144500);
+      setSaleRate(144500);
+      setPurchaseRate(140000);
+    }
+  }, [isSilver]);
 
   // Settlement splits
   const [cashRecv, setCashRecv] = useState<number>(0);
@@ -287,10 +302,10 @@ export const BuySellPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
-              BUY-SELL BULLION (खरीद बिक्री)
+              BUY-SELL BULLION (खरीद बिक्री) - {isSilver ? 'SILVER (चाँदी)' : 'GOLD (सोना)'}
             </h1>
             <p className="text-[11px] text-slate-500">
-              Direct bullion purchase, delivery orders & real-time Udhari Section
+              Direct {isSilver ? 'silver' : 'bullion'} purchase, delivery orders & real-time Udhari Section
             </p>
           </div>
         </div>
@@ -301,14 +316,14 @@ export const BuySellPage: React.FC = () => {
             <TrendingDown className="h-3.5 w-3.5 text-rose-600" />
             <span className="text-slate-600 font-semibold">(बेचना) SALE RATE:</span>
             <span className="font-black text-rose-700">₹{saleRate.toLocaleString('en-IN')}</span>
-            <span className="text-[10px] text-slate-400">₹/10gm</span>
+            <span className="text-[10px] text-slate-400">{isSilver ? '₹/kg' : '₹/10gm'}</span>
           </div>
 
           <div className="flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
             <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
             <span className="text-slate-600 font-semibold">(खरीदना) PURCHASE RATE:</span>
             <span className="font-black text-emerald-700">₹{purchaseRate.toLocaleString('en-IN')}</span>
-            <span className="text-[10px] text-slate-400">₹/10gm</span>
+            <span className="text-[10px] text-slate-400">{isSilver ? '₹/kg' : '₹/10gm'}</span>
           </div>
 
           <button
@@ -548,22 +563,32 @@ export const BuySellPage: React.FC = () => {
               </div>
 
               <div className="p-4 space-y-3 text-xs">
-                {/* Gold Udhari Grid */}
+                {/* Active Metal Udhari Grid */}
                 <div className="space-y-1.5 pb-3 border-b border-slate-200">
                   <div className="flex items-center justify-between font-bold text-slate-800">
-                    <span>(सोना) Gold Ledger</span>
+                    <span>{isSilver ? '(चाँदी) Silver Ledger' : '(सोना) Gold Ledger'}</span>
                     <span className="font-mono text-[11px] text-slate-500">gm</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     <div className="p-2 rounded bg-slate-50 border border-slate-200">
                       <span className="text-slate-500 block text-[10px]">(पुराना) Old:</span>
-                      <span className="font-bold text-slate-900">{oldGoldBal.toFixed(3)} gm</span>
+                      <span className="font-bold text-slate-900">
+                        {isSilver
+                          ? oldSilverBal < 0
+                            ? `{-${Math.abs(oldSilverBal).toFixed(3)} gm}`
+                            : `${oldSilverBal.toFixed(3)} gm`
+                          : `${oldGoldBal.toFixed(3)} gm`}
+                      </span>
                     </div>
                     <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                      <span className="text-slate-500 block text-[10px]">Silver Old:</span>
+                      <span className="text-slate-500 block text-[10px]">
+                        {isSilver ? 'Gold Old:' : 'Silver Old:'}
+                      </span>
                       <span className="font-bold text-rose-700">
-                        {oldSilverBal < 0
+                        {isSilver
+                          ? `${oldGoldBal.toFixed(3)} gm`
+                          : oldSilverBal < 0
                           ? `{-${Math.abs(oldSilverBal).toFixed(3)} gm}`
                           : `${oldSilverBal.toFixed(3)} gm`}
                       </span>
@@ -571,14 +596,16 @@ export const BuySellPage: React.FC = () => {
                   </div>
 
                   <div className="p-2 rounded-lg bg-emerald-100/70 border border-emerald-300 flex items-center justify-between">
-                    <span className="font-bold text-emerald-950 text-xs">FINAL GOLD:</span>
+                    <span className="font-bold text-emerald-950 text-xs">
+                      FINAL {isSilver ? 'SILVER' : 'GOLD'}:
+                    </span>
                     <span
                       className={`font-black text-sm font-mono ${
-                        newGoldBal >= 0 ? 'text-emerald-900' : 'text-rose-700'
+                        (isSilver ? (oldSilverBal + (txnType === 'BUY' ? weight : -weight)) : newGoldBal) >= 0 ? 'text-emerald-900' : 'text-rose-700'
                       }`}
                     >
-                      {newGoldBal >= 0 ? '+' : ''}
-                      {newGoldBal.toFixed(3)} gm
+                      {(isSilver ? (oldSilverBal + (txnType === 'BUY' ? weight : -weight)) : newGoldBal) >= 0 ? '+' : ''}
+                      {(isSilver ? (oldSilverBal + (txnType === 'BUY' ? weight : -weight)) : newGoldBal).toFixed(3)} gm
                     </span>
                   </div>
                 </div>

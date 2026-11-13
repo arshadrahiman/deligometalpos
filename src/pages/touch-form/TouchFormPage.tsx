@@ -1,16 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileCheck2, Printer, QrCode, Sparkles, Zap } from 'lucide-react';
 import { calculateKarat } from '../../utils/calculations/bullionMath';
+import { useMetalStore } from '../../store/useMetalStore';
 
 export const TouchFormPage: React.FC = () => {
+  const { metalMode } = useMetalStore();
+  const isSilver = metalMode === 'SILVER';
+
   const [reportNo, setReportNo] = useState('XRF-2026-5541');
   const [customerName, setCustomerName] = useState('Rajesh Swarnakar');
-  const [sampleDesc, setSampleDesc] = useState('Lagdi / Melting Sample');
+  const [sampleDesc, setSampleDesc] = useState(isSilver ? 'Silver / Chandi Sample (चाँदी)' : 'Lagdi / Melting Sample (सोना)');
   const [sampleWeight, setSampleWeight] = useState<number>(14.85);
-  const [goldTouch, setGoldTouch] = useState<number>(91.75);
-  const [silverTouch, setSilverTouch] = useState<number>(4.2);
-  const [copperTouch, setCopperTouch] = useState<number>(3.85);
+  const [goldTouch, setGoldTouch] = useState<number>(isSilver ? 0.0 : 91.75);
+  const [silverTouch, setSilverTouch] = useState<number>(isSilver ? 92.5 : 4.2);
+  const [copperTouch, setCopperTouch] = useState<number>(isSilver ? 7.3 : 3.85);
   const [zincTouch, setZincTouch] = useState<number>(0.2);
+
+  useEffect(() => {
+    if (isSilver) {
+      setSampleDesc('Silver / Chandi Sample (चाँदी)');
+      setGoldTouch(0.0);
+      setSilverTouch(92.5);
+      setCopperTouch(7.3);
+    } else {
+      setSampleDesc('Lagdi / Melting Sample (सोना)');
+      setGoldTouch(91.75);
+      setSilverTouch(4.2);
+      setCopperTouch(3.85);
+    }
+  }, [isSilver]);
 
   const calculatedKarat = calculateKarat(goldTouch);
 

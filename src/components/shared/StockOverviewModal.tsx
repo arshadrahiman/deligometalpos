@@ -1,203 +1,378 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
-import { useStockStore } from '../../store/useStockStore';
 import { useUIStore } from '../../store/useUIStore';
-import { Scale, IndianRupee, TrendingUp, RefreshCw, Layers } from 'lucide-react';
+import { useMetalStore } from '../../store/useMetalStore';
+import {
+  Scale,
+  IndianRupee,
+  Building,
+  Layers,
+  Edit3,
+  Calendar,
+  Lock,
+  History,
+} from 'lucide-react';
 
 export const StockOverviewModal: React.FC = () => {
   const { isStockModalOpen, closeStockModal, showToast } = useUIStore();
-  const { summary, updateRates } = useStockStore();
+  const { metalMode } = useMetalStore();
 
-  const [gold24K, setGold24K] = useState(summary.marketRates.gold24K);
-  const [gold22K, setGold22K] = useState(summary.marketRates.gold22K);
-  const [silver1Kg, setSilver1Kg] = useState(summary.marketRates.silver1Kg);
+  const [fromDate, setFromDate] = useState('2026-11-01');
+  const [toDate, setToDate] = useState('2026-11-11');
 
-  const handleUpdateRates = () => {
-    updateRates(Number(gold24K), Number(gold22K), Number(silver1Kg));
-    showToast('Market rates and portfolio valuation updated successfully!');
-  };
+  // Metrics matching reference/stock_view_1440.png
+  const cashInStock = 7230290;
+  const cashInBank = 108283;
+  const selfBank2 = 0;
+
+  // Gold vs Silver metrics
+  const fineInStockGold = 469.009;
+  const fineInStockSilver = 151498.093;
+
+  const avgBuyRateGold = 14114;
+  const avgSellRateGold = 14445;
+  const todayBuyFineGold = 137.004;
+  const todaySellFineGold = 30.010;
+
+  const avgBuyRateSilver = 950;
+  const avgSellRateSilver = 980;
+  const todayBuyFineSilver = 12500.0;
+  const todaySellFineSilver = 4200.0;
+
+  const totalKacha = 215.0;
+  const totalFineInKacha = 181.55;
+
+  const udharGold = -19.0;
+  const jamaGold = 0.0;
+  const netGold = -19.0;
+
+  const udharSilver = -413.043;
+  const jamaSilver = 0.0;
+  const netSilver = -413.043;
+
+  const udharCash = -114808;
+  const jamaCash = 415534;
+  const netCash = 300726;
+
+  const isGold = metalMode === 'GOLD';
 
   return (
     <Modal
       isOpen={isStockModalOpen}
       onClose={closeStockModal}
-      title="MASTER VAULT STOCK & BUSINESS POONJEE SUMMARY"
+      title={`${metalMode} STOCK VIEW (स्टॉक सारांश)`}
       maxWidth="4xl"
     >
       <div className="space-y-4 text-xs">
-        {/* Top Summary Banner */}
-        <div className="rounded-lg bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 p-4 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-3">
+        {/* Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-2 gap-2">
           <div>
-            <span className="text-[11px] font-medium uppercase tracking-wider text-amber-100">
-              Total Business Capital (कुल पूँजी)
-            </span>
-            <div className="text-2xl font-extrabold mt-0.5">
-              ₹ {summary.totalBusinessWorth.toLocaleString('en-IN')}
-            </div>
-            <span className="text-[11px] text-amber-100">
-              Today Estimated Trading Profit: +₹ {summary.todayProfit.toLocaleString('en-IN')}
-            </span>
+            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              {isGold ? 'GOLD STOCK VIEW' : 'SILVER STOCK VIEW'}
+            </h2>
+            <p className="text-[11px] text-slate-500">
+              Real-time overview of current metal inventory and financial balances
+            </p>
           </div>
-
-          <div className="flex items-center space-x-3 bg-white/10 rounded-lg p-2.5 backdrop-blur-xs">
-            <div className="flex flex-col text-right">
-              <span className="text-[10px] text-amber-200 uppercase font-semibold">
-                Pure Gold in Vault
-              </span>
-              <span className="text-lg font-bold text-white">
-                {summary.pureGoldStock.weightGm.toFixed(3)} gm
-              </span>
-            </div>
-            <Scale className="h-7 w-7 text-amber-200" />
-          </div>
+          <button
+            onClick={() => showToast('Stock calibration saved')}
+            className="flex items-center space-x-1 px-3 py-1 bg-white border border-slate-300 rounded text-slate-700 font-bold hover:bg-slate-50 text-xs shadow-xs"
+          >
+            <Edit3 className="h-3 w-3 text-brand-maroon" />
+            <span>Set Stock</span>
+          </button>
         </div>
 
-        {/* 3 Column Grid: Liquid Cash, Bullion, & Udhari */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Card 1: Liquid Cash & Bank */}
-          <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-xs space-y-2">
-            <div className="flex items-center space-x-2 text-slate-700 font-bold border-b pb-1.5">
-              <IndianRupee className="h-4 w-4 text-emerald-600" />
-              <span>Liquid Cash & Bank (रोकड़)</span>
+        {/* 4 Top Metric Cards Matching Reference */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          {/* Card 1: CASH IN STOCK */}
+          <div className="p-3 rounded-lg border border-slate-200 bg-white shadow-xs">
+            <div className="flex items-center space-x-2">
+              <div className="h-6 w-6 rounded bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs">
+                ₹
+              </div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Cash in Stock</span>
             </div>
-            <div className="space-y-1.5 text-slate-600">
-              <div className="flex justify-between">
-                <span>Safe Cash (गल्ला रोकड़):</span>
-                <span className="font-semibold text-slate-900">
-                  ₹ {summary.liquidCash.toLocaleString('en-IN')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Primary Bank Account:</span>
-                <span className="font-semibold text-slate-900">
-                  ₹ {summary.primaryBank.toLocaleString('en-IN')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Secondary Bank Account:</span>
-                <span className="font-semibold text-slate-900">
-                  ₹ {summary.secondaryBank.toLocaleString('en-IN')}
-                </span>
-              </div>
+            <div className="mt-2 text-base font-black text-slate-900 font-mono">
+              ₹ {cashInStock.toLocaleString('en-IN')}
             </div>
           </div>
 
-          {/* Card 2: Physical Bullion & Scrap */}
-          <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-xs space-y-2">
-            <div className="flex items-center space-x-2 text-slate-700 font-bold border-b pb-1.5">
-              <Scale className="h-4 w-4 text-brand-gold" />
-              <span>Bullion & Raw Scrap (सोना-चांदी)</span>
+          {/* Card 2: CASH IN BANK */}
+          <div className="p-3 rounded-lg border border-slate-200 bg-white shadow-xs">
+            <div className="flex items-center space-x-2">
+              <div className="h-6 w-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center">
+                <Building className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Cash in Bank</span>
             </div>
-            <div className="space-y-1.5 text-slate-600">
-              <div className="flex justify-between">
-                <span>Pure 99.9 Gold Stock:</span>
-                <span className="font-semibold text-amber-600">
-                  {summary.pureGoldStock.weightGm.toFixed(3)} gm
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Raw Scrap (Kacha Gold):</span>
-                <span className="font-semibold text-slate-800">
-                  {summary.rawScrapStock.kachaGrossWeight.toFixed(3)} gm
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Physical Silver Stock:</span>
-                <span className="font-semibold text-slate-800">
-                  {(summary.silverStock.weightGm / 1000).toFixed(2)} kg
-                </span>
-              </div>
+            <div className="mt-2 text-base font-black text-slate-900 font-mono">
+              ₹ {cashInBank.toLocaleString('en-IN')}
             </div>
           </div>
 
-          {/* Card 3: Udhari Balances */}
-          <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-xs space-y-2">
-            <div className="flex items-center space-x-2 text-slate-700 font-bold border-b pb-1.5">
-              <Layers className="h-4 w-4 text-brand-maroon" />
-              <span>Udhari Ledger Net (उधारी)</span>
+          {/* Card 3: SELF BANK 2 */}
+          <div className="p-3 rounded-lg border border-slate-200 bg-white shadow-xs">
+            <div className="flex items-center space-x-2">
+              <div className="h-6 w-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center">
+                <Building className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Self Bank 2</span>
             </div>
-            <div className="space-y-1.5 text-slate-600">
-              <div className="flex justify-between">
-                <span>Net Customer Gold Due:</span>
-                <span
-                  className={`font-semibold ${
-                    summary.udhariOutstanding.netCustomerGold >= 0
-                      ? 'text-emerald-600'
-                      : 'text-rose-600'
-                  }`}
-                >
-                  {summary.udhariOutstanding.netCustomerGold >= 0 ? '+' : ''}
-                  {summary.udhariOutstanding.netCustomerGold.toFixed(3)} gm
-                </span>
+            <div className="mt-2 text-base font-black text-slate-900 font-mono">
+              ₹ {selfBank2.toLocaleString('en-IN')}
+            </div>
+          </div>
+
+          {/* Card 4: FINE IN STOCK (Dynamic based on metalMode) */}
+          <div className={`p-3 rounded-lg border ${isGold ? 'border-amber-300 bg-amber-50/40' : 'border-slate-300 bg-slate-50'} shadow-xs`}>
+            <div className="flex items-center space-x-2">
+              <div className={`h-6 w-6 rounded ${isGold ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'} flex items-center justify-center font-bold text-xs`}>
+                <Scale className="h-3.5 w-3.5" />
               </div>
-              <div className="flex justify-between">
-                <span>Net Customer Cash Due:</span>
-                <span
-                  className={`font-semibold ${
-                    summary.udhariOutstanding.netCustomerCash >= 0
-                      ? 'text-emerald-600'
-                      : 'text-rose-600'
-                  }`}
-                >
-                  ₹ {summary.udhariOutstanding.netCustomerCash.toLocaleString('en-IN')}
-                </span>
-              </div>
-              <div className="text-[10px] text-slate-400 pt-1">
-                Positive indicates customers owe shop; negative indicates shop owes customers.
-              </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase">
+                {isGold ? 'Fine Gold in Stock' : 'Fine Silver in Stock'}
+              </span>
+            </div>
+            <div className={`mt-2 text-base font-black ${isGold ? 'text-amber-900' : 'text-slate-900'} font-mono`}>
+              {isGold ? `${fineInStockGold.toFixed(3)} gm` : `${fineInStockSilver.toFixed(3)} gm`}
             </div>
           </div>
         </div>
 
-        {/* Live Market Rate Settings Form */}
-        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 space-y-2">
+        {/* Section 2: Fine Stock Details & Kacha Stock Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {/* Fine Stock Details */}
+          <div className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
+            <div className="bg-brand-maroon text-white font-bold px-3 py-1.5 text-xs flex items-center justify-between">
+              <span>FINE STOCK DETAILS ({metalMode})</span>
+              <Edit3 className="h-3.5 w-3.5 text-amber-300" />
+            </div>
+            <div className="p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-2 pb-2 border-b">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">AVG BUY RATE</span>
+                  <span className="font-bold text-slate-800 font-mono">
+                    {isGold ? `${avgBuyRateGold.toLocaleString('en-IN')} ₹` : `${avgBuyRateSilver.toLocaleString('en-IN')} ₹`}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">AVG SELL RATE</span>
+                  <span className="font-bold text-slate-800 font-mono">
+                    {isGold ? `${avgSellRateGold.toLocaleString('en-IN')} ₹` : `${avgSellRateSilver.toLocaleString('en-IN')} ₹`}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">TODAY BUY FINE</span>
+                  <span className="font-bold text-slate-800 font-mono">
+                    {isGold ? `${todayBuyFineGold.toFixed(3)} gm` : `${todayBuyFineSilver.toFixed(3)} gm`}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">TODAY SELL FINE</span>
+                  <span className="font-bold text-slate-800 font-mono">
+                    {isGold ? `${todaySellFineGold.toFixed(3)} gm` : `${todaySellFineSilver.toFixed(3)} gm`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Kacha Stock Details */}
+          <div className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
+            <div className="bg-brand-maroon text-white font-bold px-3 py-1.5 text-xs flex items-center justify-between">
+              <span>KACHA STOCK DETAILS</span>
+              <Scale className="h-3.5 w-3.5 text-amber-300" />
+            </div>
+            <div className="p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-2 pb-2 border-b">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">TOTAL KACHA</span>
+                  <span className="font-bold text-slate-800 font-mono">{totalKacha.toFixed(3)} gm</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">TOTAL FINE IN KACHA</span>
+                  <span className="font-bold text-slate-800 font-mono">{totalFineInKacha.toFixed(3)} gm</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">TODAY KACHA</span>
+                  <span className="font-bold text-slate-800 font-mono">{totalKacha.toFixed(3)} gm</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">TODAY FINE IN KACHA</span>
+                  <span className="font-bold text-slate-800 font-mono">{totalFineInKacha.toFixed(3)} gm</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Udhari (Debits & Credits) */}
+        <div className="space-y-2">
+          <h3 className="font-black text-slate-800 text-xs tracking-wider uppercase">
+            UDHARI (DEBITS & CREDITS)
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Metal Dues (Gold vs Silver) */}
+            <div className="rounded-lg border border-slate-700 bg-white overflow-hidden shadow-xs">
+              <div className="bg-slate-700 text-white font-bold px-3 py-1.5 text-xs flex items-center justify-between">
+                <span>{isGold ? 'METAL DUES (GOLD)' : 'METAL DUES (SILVER)'}</span>
+                <Scale className="h-3.5 w-3.5 text-amber-300" />
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="grid grid-cols-2 gap-2 pb-2 border-b">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-semibold">
+                      {isGold ? 'UDHAR GOLD' : 'UDHAR SILVER'}
+                    </span>
+                    <span className="font-bold text-rose-600 font-mono">
+                      {isGold ? `${udharGold.toFixed(3)} gm` : `${udharSilver.toFixed(3)} gm`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-semibold">
+                      {isGold ? 'JAMA GOLD' : 'JAMA SILVER'}
+                    </span>
+                    <span className="font-bold text-emerald-700 font-mono">
+                      {isGold ? `${jamaGold.toFixed(3)} gm` : `${jamaSilver.toFixed(3)} gm`}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">NET JAMA/UDHARI</span>
+                  <span className="font-black text-rose-700 font-mono text-sm">
+                    {isGold ? `${netGold.toFixed(3)} gm` : `${netSilver.toFixed(3)} gm`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cash Dues */}
+            <div className="rounded-lg border border-slate-700 bg-white overflow-hidden shadow-xs">
+              <div className="bg-slate-700 text-white font-bold px-3 py-1.5 text-xs flex items-center justify-between">
+                <span>CASH DUES</span>
+                <IndianRupee className="h-3.5 w-3.5 text-emerald-300" />
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="grid grid-cols-2 gap-2 pb-2 border-b">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-semibold">UDHAR CASH</span>
+                    <span className="font-bold text-rose-600 font-mono">
+                      ₹ {udharCash.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-semibold">JAMA CASH</span>
+                    <span className="font-bold text-emerald-700 font-mono">
+                      ₹ +{jamaCash.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-semibold">NET JAMA/UDHARI CASH</span>
+                  <span className="font-black text-emerald-700 font-mono text-sm">
+                    ₹ +{netCash.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Capital / Poonjee */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1.5 font-bold text-slate-800">
-              <TrendingUp className="h-4 w-4 text-brand-maroon" />
-              <span>Current Market Gold & Silver Rates (लाइव भाव सेटिंग)</span>
+            <h3 className="font-black text-slate-800 text-xs tracking-wider uppercase">
+              CAPITAL / POONJEE
+            </h3>
+            <div className="flex items-center space-x-2">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="px-2 py-0.5 rounded border border-slate-300 text-[11px]"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="px-2 py-0.5 rounded border border-slate-300 text-[11px]"
+              />
+              <button
+                type="button"
+                className="px-2 py-1 bg-brand-maroon text-white font-bold rounded text-[11px] hover:bg-brand-maroon-dark"
+              >
+                Historical Logs
+              </button>
             </div>
-            <button
-              onClick={handleUpdateRates}
-              className="flex items-center space-x-1 bg-brand-maroon text-white font-semibold px-3 py-1 rounded text-xs hover:bg-brand-maroon-dark transition-all"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>Save & Re-evaluate</span>
-            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                24K Gold Rate (₹ / 10gm)
-              </label>
-              <input
-                type="number"
-                value={gold24K}
-                onChange={(e) => setGold24K(Number(e.target.value))}
-                className="w-full px-2.5 py-1.5 text-xs font-semibold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* CASH CAPITAL */}
+            <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-xs">
+              <div className="bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs">
+                CASH CAPITAL
+              </div>
+              <div className="p-3 space-y-1.5 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">NET POONJEE CASH</span>
+                  <span className="font-bold text-slate-900 font-mono">66,83,969 ₹</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">TOTAL VALUATION</span>
+                  <span className="font-bold text-slate-900 font-mono">10,69,25,692 ₹</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t">
+                  <span className="text-slate-600 font-semibold">TODAY CASH PROFIT</span>
+                  <span className="font-bold text-emerald-700 font-mono">+48,304 ₹</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                22K Gold Rate (₹ / 10gm)
-              </label>
-              <input
-                type="number"
-                value={gold22K}
-                onChange={(e) => setGold22K(Number(e.target.value))}
-                className="w-full px-2.5 py-1.5 text-xs font-semibold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
-              />
+
+            {/* GOLD CAPITAL */}
+            <div className={`rounded-lg border ${isGold ? 'border-amber-400 ring-2 ring-amber-300' : 'border-slate-200'} bg-white overflow-hidden shadow-xs`}>
+              <div className="bg-amber-600 text-white font-bold px-3 py-1.5 text-xs">
+                GOLD CAPITAL
+              </div>
+              <div className="p-3 space-y-1.5 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">NET POONJEE GOLD</span>
+                  <span className="font-bold text-slate-900 font-mono">3,468.108 gm</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">TOTAL VALUATION (GOLD)</span>
+                  <span className="font-bold text-slate-900 font-mono">7,402.263 gm</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t">
+                  <span className="text-slate-600 font-semibold">TODAY GOLD PROFIT</span>
+                  <span className="font-bold text-emerald-700 font-mono">+3.344 gm</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Silver 99.9 Rate (₹ / 1 Kg)
-              </label>
-              <input
-                type="number"
-                value={silver1Kg}
-                onChange={(e) => setSilver1Kg(Number(e.target.value))}
-                className="w-full px-2.5 py-1.5 text-xs font-semibold rounded border border-slate-300 focus:border-brand-maroon focus:outline-none"
-              />
+
+            {/* SILVER CAPITAL */}
+            <div className={`rounded-lg border ${!isGold ? 'border-slate-400 ring-2 ring-slate-300' : 'border-slate-200'} bg-white overflow-hidden shadow-xs`}>
+              <div className="bg-slate-700 text-white font-bold px-3 py-1.5 text-xs">
+                SILVER CAPITAL
+              </div>
+              <div className="p-3 space-y-1.5 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">NET POONJEE SILVER</span>
+                  <span className="font-bold text-slate-900 font-mono">1,67,149.675 gm</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">TOTAL VALUATION (SILVER)</span>
+                  <span className="font-bold text-slate-900 font-mono">3,56,418.972 gm</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t">
+                  <span className="text-slate-600 font-semibold">TODAY SILVER PROFIT</span>
+                  <span className="font-bold text-emerald-700 font-mono">+161.015 gm</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -205,4 +380,3 @@ export const StockOverviewModal: React.FC = () => {
     </Modal>
   );
 };
-

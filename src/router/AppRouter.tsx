@@ -20,6 +20,7 @@ import { CertificatePage } from '../pages/certificate/CertificatePage';
 import { KharMelPage } from '../pages/khar-mel/KharMelPage';
 import { TouchFormPage } from '../pages/touch-form/TouchFormPage';
 import { ExtraSettingsPage } from '../pages/settings/ExtraSettingsPage';
+import { StockPage } from '../pages/stock/StockPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -31,6 +32,7 @@ export const AppRouter: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/stock" element={<StockPage />} />
           <Route path="/exchange" element={<ExchangePage />} />
           <Route path="/buy-sell" element={<BuySellPage />} />
           <Route path="/udhari" element={<LoanPage />} />

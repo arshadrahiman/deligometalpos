@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlaskConical, Scale, ArrowRight, RefreshCw } from 'lucide-react';
 import { calculateKharMelAlloy } from '../../utils/calculations/bullionMath';
+import { useMetalStore } from '../../store/useMetalStore';
 
 export const KharMelPage: React.FC = () => {
-  const [metal, setMetal] = useState<'GOLD' | 'SILVER'>('GOLD');
+  const { metalMode } = useMetalStore();
+  const [metal, setMetal] = useState<'GOLD' | 'SILVER'>(metalMode);
   const [currentWeight, setCurrentWeight] = useState<number>(100.0);
   const [currentPurity, setCurrentPurity] = useState<number>(99.9);
   const [targetPurity, setTargetPurity] = useState<number>(91.6);
   const [alloyPurity, setAlloyPurity] = useState<number>(0.0); // 0% = pure copper / khar
+
+  useEffect(() => {
+    setMetal(metalMode);
+    if (metalMode === 'SILVER') {
+      setCurrentPurity(99.99);
+      setTargetPurity(92.5);
+    } else {
+      setCurrentPurity(99.9);
+      setTargetPurity(91.6);
+    }
+  }, [metalMode]);
 
   const requiredAlloy = calculateKharMelAlloy(
     currentWeight,

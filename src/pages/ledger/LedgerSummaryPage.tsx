@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Customer } from '../../types';
 import { customerService } from '../../services/customerService';
 import { Modal } from '../../components/common/Modal';
+import { useMetalStore } from '../../store/useMetalStore';
 import {
   Layers,
   Printer,
@@ -22,10 +23,14 @@ interface LedgerRowItem {
   mobile: string;
   dateTime: string;
   goldBalance: number;
+  silverBalance: number;
   cashBalance: number;
 }
 
 export const LedgerSummaryPage: React.FC = () => {
+  const { metalMode } = useMetalStore();
+  const isSilver = metalMode === 'SILVER';
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState<string>('all');
   const [mobileFilter, setMobileFilter] = useState<string>('');
@@ -45,6 +50,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '',
       dateTime: '11-11-2026\n03:54 PM',
       goldBalance: 0.0,
+      silverBalance: 0.0,
       cashBalance: 10000,
     },
     {
@@ -55,6 +61,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '',
       dateTime: '11-11-2026\n01:01 PM',
       goldBalance: 0.0,
+      silverBalance: 0.0,
       cashBalance: -108283,
     },
     {
@@ -65,6 +72,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '',
       dateTime: '11-11-2026\n12:11 PM',
       goldBalance: -2.0,
+      silverBalance: 0.0,
       cashBalance: 0,
     },
     {
@@ -75,6 +83,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '',
       dateTime: '11-11-2026\n11:52 AM',
       goldBalance: -5.0,
+      silverBalance: 0.0,
       cashBalance: 289000,
     },
     {
@@ -85,6 +94,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '',
       dateTime: '10-11-2026\n03:24 PM',
       goldBalance: 0.0,
+      silverBalance: 0.0,
       cashBalance: -6525,
     },
     {
@@ -95,6 +105,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '',
       dateTime: '10-11-2026\n11:02 AM',
       goldBalance: 0.0,
+      silverBalance: 0.0,
       cashBalance: 15454,
     },
     {
@@ -105,6 +116,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '9645808999',
       dateTime: '07-11-2026\n05:19 PM',
       goldBalance: 0.0,
+      silverBalance: -413.043,
       cashBalance: 23530,
     },
     {
@@ -115,6 +127,7 @@ export const LedgerSummaryPage: React.FC = () => {
       mobile: '98-7654-321',
       dateTime: '06-11-2026\n01:52 PM',
       goldBalance: -12.0,
+      silverBalance: 0.0,
       cashBalance: 77550,
     },
   ];
@@ -131,13 +144,13 @@ export const LedgerSummaryPage: React.FC = () => {
   });
 
   const totalGoldCredit = displayItems
-    .filter((c) => c.goldBalance > 0)
-    .reduce((acc, c) => acc + c.goldBalance, 0);
+    .filter((c) => (isSilver ? c.silverBalance : c.goldBalance) > 0)
+    .reduce((acc, c) => acc + (isSilver ? c.silverBalance : c.goldBalance), 0);
 
   const totalGoldDebit = Math.abs(
     displayItems
-      .filter((c) => c.goldBalance < 0)
-      .reduce((acc, c) => acc + c.goldBalance, 0)
+      .filter((c) => (isSilver ? c.silverBalance : c.goldBalance) < 0)
+      .reduce((acc, c) => acc + (isSilver ? c.silverBalance : c.goldBalance), 0)
   );
 
   const netGold = totalGoldCredit - totalGoldDebit;
@@ -269,7 +282,9 @@ export const LedgerSummaryPage: React.FC = () => {
                 <th className="py-2 px-3 border border-slate-500 text-center w-32">Date/Time</th>
                 <th className="py-2 px-3 border border-slate-500 text-center w-40">Customer</th>
                 <th className="py-2 px-3 border border-slate-500 text-center w-32">Mobile</th>
-                <th className="py-2 px-3 border border-slate-500 text-center w-36">Gold (gm)</th>
+                <th className="py-2 px-3 border border-slate-500 text-center w-36">
+                  {isSilver ? 'Silver (gm)' : 'Gold (gm)'}
+                </th>
                 <th className="py-2 px-3 border border-slate-500 text-center w-40">Amount (₹)</th>
                 <th className="py-2 px-3 border border-slate-500 text-center w-28">Action</th>
               </tr>
@@ -302,11 +317,19 @@ export const LedgerSummaryPage: React.FC = () => {
                       {row.mobile || '-'}
                     </td>
                     <td className="py-2.5 px-3 border-r border-slate-200 font-mono font-bold">
-                      <span className={row.goldBalance < 0 ? 'text-rose-600' : 'text-emerald-700'}>
-                        {row.goldBalance < 0
-                          ? `${row.goldBalance.toFixed(3)} gm`
-                          : `+${row.goldBalance.toFixed(3)} gm`}
-                      </span>
+                      {isSilver ? (
+                        <span className={row.silverBalance < 0 ? 'text-rose-600' : 'text-emerald-700'}>
+                          {row.silverBalance < 0
+                            ? `{-${Math.abs(row.silverBalance).toFixed(3)} gm}`
+                            : `+${row.silverBalance.toFixed(3)} gm`}
+                        </span>
+                      ) : (
+                        <span className={row.goldBalance < 0 ? 'text-rose-600' : 'text-emerald-700'}>
+                          {row.goldBalance < 0
+                            ? `${row.goldBalance.toFixed(3)} gm`
+                            : `+${row.goldBalance.toFixed(3)} gm`}
+                        </span>
+                      )}
                     </td>
                     <td className="py-2.5 px-3 border-r border-slate-200 font-mono font-bold">
                       <span className={row.cashBalance < 0 ? 'text-rose-600' : 'text-emerald-700'}>

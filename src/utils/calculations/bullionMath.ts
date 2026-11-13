@@ -72,6 +72,26 @@ export function convertGoldToCash(goldWeight: number, ratePer10Gm: number): numb
 }
 
 /**
+ * Bhavcut Converter: Cash to Pure Silver
+ * Rate quoted per 1 kilogram (1000 gm)
+ * Formula: (amount * 1000) / ratePerKg
+ */
+export function convertCashToSilver(cashAmount: number, ratePerKg: number): number {
+  if (!cashAmount || !ratePerKg || ratePerKg <= 0) return 0;
+  return round((cashAmount * 1000) / ratePerKg, 3);
+}
+
+/**
+ * Bhavcut Converter: Pure Silver to Cash
+ * Rate quoted per 1 kilogram (1000 gm)
+ * Formula: (silverWeight * ratePerKg) / 1000
+ */
+export function convertSilverToCash(silverWeight: number, ratePerKg: number): number {
+  if (!silverWeight || !ratePerKg || ratePerKg <= 0) return 0;
+  return round((silverWeight * ratePerKg) / 1000, 2);
+}
+
+/**
  * Calculates gross and net valuation for direct bullion buy/sell
  */
 export function calculateBuySellNet(
