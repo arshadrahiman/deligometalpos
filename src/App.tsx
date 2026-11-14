@@ -11,7 +11,7 @@ export const App: React.FC = () => {
   }, [initTheme]);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AppRouter />
     </BrowserRouter>
   );

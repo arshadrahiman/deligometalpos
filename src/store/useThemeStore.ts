@@ -267,3 +267,4 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 if (typeof window !== 'undefined') {
   useThemeStore.getState().initTheme();
 }
+
