@@ -15,7 +15,7 @@
 
 - **Live URL**: [https://arshadrahiman.github.io/deligometalpos/](https://arshadrahiman.github.io/deligometalpos/)
 - **Demo Login**:
-  - **Mobile No**: `9645808999` (or `7879404501`)
+  - **Mobile No**: `9645808999` 
   - **Password**: `12345`
 
 ---
