@@ -580,7 +580,7 @@ export const LoanPage: React.FC = () => {
                       `${isSilver ? 'Silver' : 'Gold'} Balance: ${finalMetal.toFixed(3)} gm\n` +
                       `Cash Balance: ₹ ${finalCash.toLocaleString('en-IN')}`
                     );
-                    window.open(`https://api.whatsapp.com/send?phone=9645808999&text=${text}`, '_blank');
+                    window.open(`https://api.whatsapp.com/send?phone=9645808999&text=${text}`, '_blank', 'noopener,noreferrer');
                   }}
                   className="p-2 rounded-full text-emerald-600 hover:bg-emerald-50 transition-colors"
                   title="WhatsApp"

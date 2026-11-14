@@ -39,7 +39,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
       `Given Cash: ₹${(transaction.settlement?.physicalCash || transaction.finalCash).toLocaleString('en-IN')}\n` +
       `Powered by Deligo Technologies`
     );
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 
   const formatReceiptDateTime = (dateStr: string): string => {

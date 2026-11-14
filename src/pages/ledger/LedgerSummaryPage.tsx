@@ -377,7 +377,8 @@ export const LedgerSummaryPage: React.FC = () => {
                             );
                             window.open(
                               `https://api.whatsapp.com/send?phone=${row.mobile || '9645808999'}&text=${text}`,
-                              '_blank'
+                              '_blank',
+                              'noopener,noreferrer'
                             );
                           }}
                           className="p-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white"

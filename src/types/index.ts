@@ -4,6 +4,7 @@ export interface UserProfile {
   role: 'ADMINISTRATOR' | 'STAFF';
   mobile: string;
   subscriptionDaysRemaining: number;
+  sessionExpiresAt?: number;
 }
 
 export interface Customer {

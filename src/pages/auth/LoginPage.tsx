@@ -4,8 +4,8 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { Sparkles, Phone, Lock, ArrowRight, ShieldCheck, HelpCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const [mobile, setMobile] = useState('9645808999');
-  const [password, setPassword] = useState('12345');
+  const [mobile, setMobile] = useState('');
+  const [password, setPassword] = useState('');
   const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '']);
   const [errorMessage, setErrorMessage] = useState('');
@@ -14,6 +14,12 @@ export const LoginPage: React.FC = () => {
 
   const { login } = useAuthStore();
   const navigate = useNavigate();
+
+  const handleFillDemo = () => {
+    setMobile('9645808999');
+    setPassword('12345');
+    setErrorMessage('');
+  };
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) value = value.slice(-1);
@@ -52,19 +58,32 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-brand-nav to-slate-950 p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 border border-slate-100 animate-fade-in relative overflow-hidden">
         {/* Decorative Top Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-brand-maroon via-brand-gold to-brand-blue" />
+        <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-brand-primary via-brand-secondary to-brand-primary-light" />
 
         {/* Brand Header */}
         <div className="text-center space-y-2 pt-2">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-maroon text-brand-gold shadow-lg mb-1">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-primary text-brand-secondary shadow-lg mb-1">
             <Sparkles className="h-8 w-8" />
           </div>
-          <h1 className="text-3xl font-normal font-lobster text-brand-maroon tracking-wide">
-            Lakshmi Gold Testing
+          <h1 className="text-3xl font-black text-brand-primary tracking-wide">
+            Deligo Metal POS
           </h1>
           <p className="text-xs text-slate-500 font-medium">
-            Deligo Technologies Bullion & Jewellery ERP
+            Bullion & Jewellery Enterprise Point of Sale
           </p>
+
+          {/* Demo Helper Pill */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={handleFillDemo}
+              className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-bold hover:bg-amber-100 transition-colors shadow-xs"
+              title="Click to fill test credentials"
+            >
+              <Sparkles className="h-3 w-3 text-amber-600" />
+              <span>Fill Demo Credentials (9645808999 / 12345)</span>
+            </button>
+          </div>
         </div>
 
         {/* Error Feedback */}
@@ -89,7 +108,7 @@ export const LoginPage: React.FC = () => {
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
                 placeholder="Mobile Number"
-                className="w-full pl-11 pr-4 h-11 text-sm rounded-2xl border border-slate-300 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none transition-all font-medium"
+                className="w-full pl-11 pr-4 h-11 text-sm rounded-2xl border border-slate-300 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 focus:outline-none transition-all font-medium"
               />
             </div>
           </div>
@@ -106,7 +125,7 @@ export const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full pl-11 pr-4 h-11 text-sm rounded-2xl border border-slate-300 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none transition-all font-medium"
+                className="w-full pl-11 pr-4 h-11 text-sm rounded-2xl border border-slate-300 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 focus:outline-none transition-all font-medium"
               />
             </div>
           </div>
@@ -126,7 +145,7 @@ export const LoginPage: React.FC = () => {
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    className="w-12 h-12 text-center text-xl font-bold rounded-xl border border-slate-300 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none"
+                    className="w-12 h-12 text-center text-xl font-bold rounded-xl border border-slate-300 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 focus:outline-none"
                   />
                 ))}
               </div>
@@ -138,7 +157,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowOtp(!showOtp)}
-              className="text-slate-500 hover:text-brand-blue transition-colors flex items-center space-x-1"
+              className="text-slate-500 hover:text-brand-primary transition-colors flex items-center space-x-1"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
               <span>{showOtp ? 'Hide OTP' : 'Login with OTP'}</span>
@@ -147,7 +166,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setForgotModalOpen(true)}
-              className="text-brand-blue font-semibold hover:underline"
+              className="text-brand-primary font-semibold hover:underline"
             >
               Forgot password?
             </button>
@@ -157,17 +176,17 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-12 bg-brand-blue text-white font-bold text-sm rounded-full shadow-lg hover:bg-blue-600 active:scale-98 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full h-12 bg-brand-primary hover:bg-brand-primary-dark text-brand-secondary font-black text-sm rounded-full shadow-lg active:scale-98 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
           >
-            <span>{isLoading ? 'VERIFYING...' : 'LOG IN'}</span>
+            <span>{isLoading ? 'CRYPTOGRAPHICALLY VERIFYING...' : 'LOG IN'}</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         </form>
 
         {/* Security Footer Notice */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-center space-x-1.5 text-[11px] text-slate-400">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-          <span>256-Bit SSL Encrypted Banking Grade Session</span>
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-center space-x-1.5 text-[11px] text-slate-500 font-medium">
+          <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span>SHA-256 Hashed • Rate-Limited Protection • Banking-Grade Session</span>
         </div>
       </div>
 

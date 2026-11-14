@@ -1,12 +1,14 @@
+import { safeJsonParse } from '../utils/security';
+
 /**
- * LocalStorage wrapper service with error handling and fallback
+ * Hardened LocalStorage wrapper with prototype pollution defense and safe fallbacks
  */
 
 export function getItem<T>(key: string, defaultValue: T): T {
   try {
     const item = localStorage.getItem(key);
     if (!item) return defaultValue;
-    return JSON.parse(item) as T;
+    return safeJsonParse<T>(item, defaultValue);
   } catch (error) {
     console.warn(`Error reading localStorage key "${key}":`, error);
     return defaultValue;
