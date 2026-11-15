@@ -113,6 +113,29 @@ export interface BuySellTransaction {
     selfBank2: number;
   };
   udhariAdjusted: boolean;
+  udhariBefore?: {
+    gold: number;
+    cash: number;
+    silver?: number;
+    silverCash?: number;
+  };
+  udhariAfter?: {
+    gold: number;
+    cash: number;
+    silver?: number;
+    silverCash?: number;
+  };
+  udhariDetails?: {
+    kchJamaGold?: number;
+    kchJamaCash?: number;
+    kchUdharGold?: number;
+    kchUdharCash?: number;
+    jamaGold?: number;
+    jamaCash?: number;
+    udharGold?: number;
+    udharCash?: number;
+  };
+  narration?: string;
   remarks?: string;
 }
 

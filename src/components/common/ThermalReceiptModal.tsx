@@ -1,13 +1,13 @@
 import React, { useRef } from 'react';
 import { Modal } from './Modal';
 import { Printer, Share2 } from 'lucide-react';
-import { ExchangeTransaction } from '../../types';
+import { ExchangeTransaction, BuySellTransaction } from '../../types';
 import { settingsService } from '../../services/settingsService';
 
 interface ThermalReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
-  transaction: ExchangeTransaction | null;
+  transaction: ExchangeTransaction | BuySellTransaction | null;
 }
 
 export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
@@ -19,6 +19,28 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
 
   if (!transaction) return null;
 
+  const isExchange = 'touch' in transaction;
+  const touch = isExchange ? (transaction as ExchangeTransaction).touch : 100.0;
+  const fineGold = isExchange ? (transaction as ExchangeTransaction).fineGold : transaction.weight;
+  const settledGold = isExchange ? (transaction as ExchangeTransaction).settledGold : transaction.weight;
+  const diffGold = isExchange ? (transaction as ExchangeTransaction).diffGold : 0;
+  const diffAmount = isExchange ? (transaction as ExchangeTransaction).diffAmount : (transaction as BuySellTransaction).grossAmount;
+  const charges = isExchange ? (transaction as ExchangeTransaction).charges : ((transaction as BuySellTransaction).discount || 0);
+  const finalCash = isExchange ? (transaction as ExchangeTransaction).finalCash : (transaction as BuySellTransaction).netAmount;
+
+  const physicalCash = transaction.settlement
+    ? ('physicalCash' in transaction.settlement
+        ? (transaction.settlement as any).physicalCash
+        : (transaction.settlement as any).cash || 0)
+    : 0;
+
+  const onlineRtgs = transaction.settlement?.onlineRtgs || 0;
+  const selfBank2 = transaction.settlement?.selfBank2 || 0;
+
+  const totalSettled = physicalCash + onlineRtgs + selfBank2;
+  const givenCash = physicalCash > 0 ? physicalCash : finalCash;
+  const totalGivenCash = totalSettled > 0 ? totalSettled : finalCash;
+
   const handlePrint = () => {
     window.print();
   };
@@ -28,15 +50,15 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
       `*LAKSHMI GOLD TESTING*\n` +
       `Receipt No: ${transaction.transactionNo}\n` +
       `Customer: ${transaction.customerName} (${transaction.customerNo})\n` +
-      `Weight: ${transaction.weight.toFixed(3)} gm | Touch: ${transaction.touch.toFixed(2)}%\n` +
-      `Fine Gold: ${transaction.fineGold.toFixed(3)} gm\n` +
-      `Gold Diya: ${transaction.settledGold.toFixed(3)} gm\n` +
-      `Difference: ${transaction.diffGold.toFixed(3)} gm\n` +
+      `Weight: ${transaction.weight.toFixed(3)} gm | Touch: ${touch.toFixed(2)}%\n` +
+      `Fine Gold: ${fineGold.toFixed(3)} gm\n` +
+      `Gold Diya: ${settledGold.toFixed(3)} gm\n` +
+      `Difference: ${diffGold.toFixed(3)} gm\n` +
       `Rate: ₹${transaction.rate.toLocaleString('en-IN')}\n` +
-      `Cash: ₹${transaction.diffAmount.toLocaleString('en-IN')}\n` +
-      `Charge: -₹${transaction.charges.toLocaleString('en-IN')}\n` +
-      `Final Cash: ₹${transaction.finalCash.toLocaleString('en-IN')}\n` +
-      `Given Cash: ₹${(transaction.settlement?.physicalCash || transaction.finalCash).toLocaleString('en-IN')}\n` +
+      `Cash: ₹${diffAmount.toLocaleString('en-IN')}\n` +
+      `Charge: -₹${charges.toLocaleString('en-IN')}\n` +
+      `Final Cash: ₹${finalCash.toLocaleString('en-IN')}\n` +
+      `Given Cash: ₹${givenCash.toLocaleString('en-IN')}\n` +
       `Powered by Deligo Technologies`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank', 'noopener,noreferrer');
@@ -62,11 +84,11 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     }
   };
 
-  const formatChargeValue = (charges: number): string => {
-    if (charges > 0) {
-      return `{-${charges.toLocaleString('en-IN')} Rs}`;
+  const formatChargeValue = (ch: number): string => {
+    if (ch > 0) {
+      return `{-${ch.toLocaleString('en-IN')} Rs}`;
     }
-    return `${charges.toLocaleString('en-IN')} Rs`;
+    return `${ch.toLocaleString('en-IN')} Rs`;
   };
 
   const formatWeight = (wt: number): string => {
@@ -82,19 +104,6 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     }
     return `${amount.toLocaleString('en-IN')} Rs`;
   };
-
-  const givenCash =
-    transaction.settlement && transaction.settlement.physicalCash > 0
-      ? transaction.settlement.physicalCash
-      : transaction.finalCash;
-
-  const totalSettled = transaction.settlement
-    ? (transaction.settlement.physicalCash || 0) +
-      (transaction.settlement.onlineRtgs || 0) +
-      (transaction.settlement.selfBank2 || 0)
-    : 0;
-
-  const totalGivenCash = totalSettled > 0 ? totalSettled : transaction.finalCash;
 
   const oldGold = transaction.udhariBefore?.gold ?? 0.0;
   const oldCash = transaction.udhariBefore?.cash ?? 23530;
@@ -123,7 +132,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               {headerMantra}
             </div>
             <div className="text-right text-[10px] font-bold">
-              (Exchange {transaction.type === 'BUY' ? 'B' : 'S'})
+              ({isExchange ? 'Exchange' : 'Bullion'} {transaction.type === 'BUY' ? 'B' : 'S'})
             </div>
           </div>
 
@@ -168,8 +177,8 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           {/* 3-Column Values */}
           <div className="grid grid-cols-3 text-center text-[10px] py-0.5 font-medium">
             <div className="text-left">{transaction.weight.toFixed(3)} gm</div>
-            <div className="text-center">{transaction.touch.toFixed(2)} %</div>
-            <div className="text-right">{transaction.fineGold.toFixed(3)} gm</div>
+            <div className="text-center">{touch.toFixed(2)} %</div>
+            <div className="text-right">{fineGold.toFixed(3)} gm</div>
           </div>
 
           <div className="border-b border-dashed border-black my-1" />
@@ -178,11 +187,11 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           <div className="space-y-1 text-[10px] py-0.5">
             <div className="flex justify-between">
               <span>Gold Paid / Diya -</span>
-              <span>{transaction.settledGold.toFixed(3)} gm</span>
+              <span>{settledGold.toFixed(3)} gm</span>
             </div>
             <div className="flex justify-between">
               <span>Difference -</span>
-              <span>{transaction.diffGold.toFixed(3)} gm</span>
+              <span>{diffGold.toFixed(3)} gm</span>
             </div>
             <div className="flex justify-between">
               <span>
@@ -194,11 +203,11 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             </div>
             <div className="flex justify-between">
               <span>Cash -</span>
-              <span>{transaction.diffAmount.toLocaleString('en-IN')} Rs</span>
+              <span>{diffAmount.toLocaleString('en-IN')} Rs</span>
             </div>
             <div className="flex justify-between">
               <span>Charge -</span>
-              <span>{formatChargeValue(transaction.charges)}</span>
+              <span>{formatChargeValue(charges)}</span>
             </div>
           </div>
 
@@ -207,7 +216,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           {/* Final Cash */}
           <div className="flex justify-between font-black text-xs py-0.5">
             <span>Final Cash       -</span>
-            <span>{transaction.finalCash.toLocaleString('en-IN')} Rs</span>
+            <span>{finalCash.toLocaleString('en-IN')} Rs</span>
           </div>
 
           <div className="border-b border-dashed border-black my-1" />

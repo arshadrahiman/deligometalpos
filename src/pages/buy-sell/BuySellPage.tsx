@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Customer, BuySellTransaction } from '../../types';
 import { buySellService } from '../../services/buySellService';
+import { customerService } from '../../services/customerService';
 import { useStockStore } from '../../store/useStockStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useMetalStore } from '../../store/useMetalStore';
@@ -11,23 +12,23 @@ import {
 } from '../../utils/calculations/bullionMath';
 import { CustomerSelect } from '../../components/shared/CustomerSelect';
 import { DataTable } from '../../components/common/DataTable';
-import { Badge } from '../../components/common/Badge';
+import { ThermalReceiptModal } from '../../components/common/ThermalReceiptModal';
+import { ExtraSettingsModal } from '../../components/settings/ExtraSettingsModal';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   TrendingUp,
   TrendingDown,
   PlusCircle,
-  List,
+  List as ListIcon,
   Save,
+  Settings,
   Printer,
   Share2,
   DollarSign,
-  Layers,
-  Calculator,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
-  Calendar,
+  Plus,
+  Minus,
 } from 'lucide-react';
 
 export const BuySellPage: React.FC = () => {
@@ -48,80 +49,146 @@ export const BuySellPage: React.FC = () => {
   const [purchaseRate, setPurchaseRate] = useState<number>(isSilver ? 95000 : 140000);
   const [discount, setDiscount] = useState<number>(0.0);
 
-  useEffect(() => {
-    fetchStock();
-    if (isSilver) {
-      const sBuy = summary.silverStock?.avgRate || 95000;
-      const sSell = summary.silverStock?.avgSellRate || 98000;
-      setSaleRate(sSell);
-      setPurchaseRate(sBuy);
-      setRate(txnType === 'BUY' ? sBuy : sSell);
-    } else {
-      const gBuy = summary.pureGoldStock?.avgBuyRate || 140000;
-      const gSell = summary.pureGoldStock?.avgSellRate || 144500;
-      setSaleRate(gSell);
-      setPurchaseRate(gBuy);
-      setRate(txnType === 'BUY' ? gBuy : gSell);
-    }
-  }, [isSilver, txnType, summary.pureGoldStock?.avgBuyRate, summary.pureGoldStock?.avgSellRate, summary.silverStock?.avgRate, summary.silverStock?.avgSellRate, fetchStock]);
-
   // Settlement splits
   const [cashRecv, setCashRecv] = useState<number>(0);
   const [onlineRecv, setOnlineRecv] = useState<number>(0);
   const [bank2Recv, setBank2Recv] = useState<number>(0);
 
-  // Inline Bhavcut
-  const [bhavcutAmt, setBhavcutAmt] = useState<number>(0);
-  const [bhavcutGold, setBhavcutGold] = useState<number>(0);
-
+  // Remarks
   const [remarks, setRemarks] = useState<string>('');
 
+  // Right Column Udhari Section Fields (EXACT MATCH TO REFERENCE / EXCHANGE MODULE)
+  const [oldGold, setOldGold] = useState<number>(0.0);
+  const [oldCash, setOldCash] = useState<number>(0);
+  const [oldSilver, setOldSilver] = useState<number>(0.0);
+  const [oldSilverCash, setOldSilverCash] = useState<number>(0);
+
+  const [kchJamaGold, setKchJamaGold] = useState<number>(0.0);
+  const [kchJamaCash, setKchJamaCash] = useState<number>(0);
+
+  const [kchUdharGold, setKchUdharGold] = useState<number>(0.0);
+  const [kchUdharCash, setKchUdharCash] = useState<number>(0);
+
+  const [jamaGold, setJamaGold] = useState<number>(0.0);
+  const [jamaCash, setJamaCash] = useState<number>(0);
+
+  const [udharGold, setUdharGold] = useState<number>(0.0);
+  const [udharCash, setUdharCash] = useState<number>(0);
+
+  // Quick Bhavcut Rate & Narration
+  const [bhavcutRate, setBhavcutRate] = useState<number>(isSilver ? 95000 : 140000);
+  const [narration, setNarration] = useState<string>('');
+  const [sampleReceived, setSampleReceived] = useState<boolean>(false);
+
+  // Modals
+  const [isExtraSettingsOpen, setIsExtraSettingsOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<BuySellTransaction | null>(null);
+
   useEffect(() => {
+    fetchStock();
     loadTransactions();
-  }, []);
+    customerService.getAll().then((list) => {
+      const defaultCust = list.find((c) => c.customerNo === 100) || list[0] || null;
+      if (defaultCust) {
+        setSelectedCustomer(defaultCust);
+      }
+    });
+  }, [fetchStock]);
 
   const loadTransactions = async () => {
     const list = await buySellService.getAll();
     setTransactions(list);
   };
 
+  // Sync Metal Mode & Live Stock Rates
+  useEffect(() => {
+    if (isSilver) {
+      const sBuy = summary.silverStock?.avgRate || 95000;
+      const sSell = summary.silverStock?.avgSellRate || 98000;
+      setSaleRate(sSell);
+      setPurchaseRate(sBuy);
+      setBhavcutRate(sBuy);
+      setRate(txnType === 'BUY' ? sBuy : sSell);
+    } else {
+      const gBuy = summary.pureGoldStock?.avgBuyRate || 140000;
+      const gSell = summary.pureGoldStock?.avgSellRate || 144500;
+      setSaleRate(gSell);
+      setPurchaseRate(gBuy);
+      setBhavcutRate(gBuy);
+      setRate(txnType === 'BUY' ? gBuy : gSell);
+    }
+  }, [
+    isSilver,
+    txnType,
+    summary.pureGoldStock?.avgBuyRate,
+    summary.pureGoldStock?.avgSellRate,
+    summary.silverStock?.avgRate,
+    summary.silverStock?.avgSellRate,
+  ]);
+
+  // Sync Customer Balances to Udhari Section on Customer Selection
+  useEffect(() => {
+    if (selectedCustomer) {
+      setOldGold(selectedCustomer.balance?.gold ?? 0.0);
+      setOldCash(selectedCustomer.balance?.cash ?? 0);
+      setOldSilver(selectedCustomer.balance?.silver ?? 0.0);
+      setOldSilverCash(0);
+    }
+  }, [selectedCustomer]);
+
   const { grossCash, netCash } = calculateBuySellNet(weight, rate, discount);
-
-  // Udhari projections
-  const oldGoldBal = selectedCustomer?.balance.gold || 0;
-  const oldCashBal = selectedCustomer?.balance.cash || 0;
-  const oldSilverBal = selectedCustomer?.balance.silver ?? -413.043;
-
   const totalPaid = (cashRecv || 0) + (onlineRecv || 0) + (bank2Recv || 0);
 
-  // Gold delta: BUY means customer sold gold to shop (+ gold to customer's credit / or + to shop)
-  const newGoldBal =
-    txnType === 'BUY'
-      ? Math.round((oldGoldBal + weight) * 1000) / 1000
-      : Math.round((oldGoldBal - weight) * 1000) / 1000;
+  // Real-time Udhari Section Final Calculation (EXACT MATHEMATICAL ENGINE AS EXCHANGE MODULE)
+  const finalGold = Math.round((oldGold + kchJamaGold - kchUdharGold + jamaGold - udharGold) * 1000) / 1000;
+  const finalCashTotal = Math.round((oldCash + kchJamaCash - kchUdharCash + jamaCash - udharCash) * 100) / 100;
 
-  // Cash delta
-  const unpaidCash = netCash - totalPaid;
-  const newCashBal =
-    txnType === 'BUY'
-      ? Math.round((oldCashBal + unpaidCash) * 100) / 100
-      : Math.round((oldCashBal - unpaidCash) * 100) / 100;
-
-  const handleInlineBhavcutAmtToGold = () => {
-    if (!bhavcutAmt || !rate) return;
-    const g = convertCashToGold(bhavcutAmt, rate);
-    setBhavcutGold(g);
-    showToast(`Converted ₹${bhavcutAmt.toLocaleString('en-IN')} to ${g.toFixed(3)} gm Gold`);
+  // Actions for Udhari Buttons
+  const handleFillKchJama = () => {
+    const val = weight > 0 ? weight : 0;
+    setKchJamaGold(val);
+    showToast(`Kch se Jama(+) filled with ${val.toFixed(3)} gm`, 'success');
   };
 
-  const handleInlineBhavcutGoldToAmt = () => {
-    if (!bhavcutGold || !rate) return;
-    const c = convertGoldToCash(bhavcutGold, rate);
-    setBhavcutAmt(c);
-    showToast(`Converted ${bhavcutGold.toFixed(3)} gm Gold to ₹${c.toLocaleString('en-IN')}`);
+  const handleFillKchUdhar = () => {
+    const val = weight > 0 ? weight : 0;
+    setKchUdharGold(val);
+    showToast(`Kch se Udhar(-) filled with ${val.toFixed(3)} gm`, 'info');
   };
 
-  const handleSave = async () => {
+  const handleBhavcutCashToGold = () => {
+    const rateToUse = bhavcutRate || rate || (isSilver ? 95000 : 140000);
+    const cashVal = finalCashTotal !== 0 ? Math.abs(finalCashTotal) : oldCash;
+    if (!cashVal || !rateToUse) {
+      showToast('Please enter a valid rate and amount to convert', 'error');
+      return;
+    }
+    const convertedG = convertCashToGold(cashVal, rateToUse);
+    setJamaGold(convertedG);
+    setUdharCash(cashVal);
+    showToast(
+      `Converted ₹${cashVal.toLocaleString('en-IN')} to ${convertedG.toFixed(3)} gm Gold @ ₹${rateToUse}/10gm!`,
+      'success'
+    );
+  };
+
+  const handleBhavcutGoldToCash = () => {
+    const rateToUse = bhavcutRate || rate || (isSilver ? 95000 : 140000);
+    const goldVal = finalGold !== 0 ? Math.abs(finalGold) : oldGold;
+    if (!goldVal || !rateToUse) {
+      showToast('Please enter a valid rate and gold weight to convert', 'error');
+      return;
+    }
+    const convertedC = convertGoldToCash(goldVal, rateToUse);
+    setJamaCash(convertedC);
+    setUdharGold(goldVal);
+    showToast(
+      `Converted ${goldVal.toFixed(3)} gm Gold to ₹${convertedC.toLocaleString('en-IN')} @ ₹${rateToUse}/10gm!`,
+      'success'
+    );
+  };
+
+  const handleSave = async (openSlip: boolean = false) => {
     if (!selectedCustomer) {
       showToast('Please select a customer first!', 'error');
       return;
@@ -146,6 +213,29 @@ export const BuySellPage: React.FC = () => {
       paidAmount: totalPaid,
       settlement: { cash: cashRecv, onlineRtgs: onlineRecv, selfBank2: bank2Recv },
       udhariAdjusted: true,
+      udhariBefore: {
+        gold: oldGold,
+        cash: oldCash,
+        silver: oldSilver,
+        silverCash: oldSilverCash,
+      },
+      udhariAfter: {
+        gold: finalGold,
+        cash: finalCashTotal,
+        silver: oldSilver,
+        silverCash: oldSilverCash,
+      },
+      udhariDetails: {
+        kchJamaGold,
+        kchJamaCash,
+        kchUdharGold,
+        kchUdharCash,
+        jamaGold,
+        jamaCash,
+        udharGold,
+        udharCash,
+      },
+      narration: narration || remarks,
       remarks,
     });
 
@@ -159,8 +249,15 @@ export const BuySellPage: React.FC = () => {
       cashAmount: netCash,
     });
 
-    showToast(`Bullion ${txnType} #${newTxn.transactionNo} saved & Stock updated! (स्टॉक अपडेट हो गया)`);
+    showToast(
+      `Bullion ${txnType} #${newTxn.transactionNo} saved & Stock updated! (स्टॉक अपडेट हो गया)`,
+      'success'
+    );
     loadTransactions();
+
+    if (openSlip) {
+      setSelectedReceipt(newTxn);
+    }
   };
 
   const columns: ColumnDef<BuySellTransaction>[] = [
@@ -289,10 +386,10 @@ export const BuySellPage: React.FC = () => {
     {
       id: 'actions',
       header: 'Action',
-      cell: () => (
+      cell: ({ row }) => (
         <button
-          onClick={() => window.print()}
-          className="p-1 rounded text-slate-600 hover:text-brand-maroon hover:bg-slate-100 transition-colors"
+          onClick={() => setSelectedReceipt(row.original)}
+          className="p-1 rounded text-slate-600 hover:text-brand-maroon hover:bg-slate-100 transition-colors cursor-pointer"
           title="Print Voucher"
         >
           <Printer className="h-4 w-4" />
@@ -301,7 +398,7 @@ export const BuySellPage: React.FC = () => {
     },
   ];
 
-  // Mock booked weight orders for customer XYZ / Rajesh
+  // Mock booked weight orders for customer
   const bookedOrders = [
     { sn: 1, bookedWt: 5.0, pendingWt: 5.0, rate: 26132, type: 'Sell', date: '08-10-2026' },
     { sn: 2, bookedWt: 12.0, pendingWt: 12.0, rate: 147000, type: 'Sell', date: '03-11-2026' },
@@ -369,7 +466,7 @@ export const BuySellPage: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <List className="h-3.5 w-3.5" />
+            <ListIcon className="h-3.5 w-3.5" />
             <span>Past Records ({transactions.length})</span>
           </button>
         </div>
@@ -466,7 +563,13 @@ export const BuySellPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {txnType === 'BUY' ? '(खरीदना) Buy Rate (₹/10gm)' : '(बेचना) Sell Rate (₹/10gm)'}
+                    {txnType === 'BUY'
+                      ? isSilver
+                        ? '(खरीदना) Buy Rate (₹/kg)'
+                        : '(खरीदना) Buy Rate (₹/10gm)'
+                      : isSilver
+                      ? '(बेचना) Sell Rate (₹/kg)'
+                      : '(बेचना) Sell Rate (₹/10gm)'}
                   </label>
                   <input
                     type="number"
@@ -489,7 +592,7 @@ export const BuySellPage: React.FC = () => {
                 </div>
                 <div className="text-right text-[11px] text-slate-200">
                   <div>Weight: {weight.toFixed(3)} gm</div>
-                  <div>Rate: ₹{rate.toLocaleString('en-IN')}/10g</div>
+                  <div>Rate: ₹{rate.toLocaleString('en-IN')}/{isSilver ? 'kg' : '10g'}</div>
                 </div>
               </div>
 
@@ -549,175 +652,474 @@ export const BuySellPage: React.FC = () => {
                 />
               </div>
 
-              <div className="pt-2 border-t flex items-center space-x-2">
+              {/* Action Buttons Left Card: Execute Trade + WhatsApp & Thermal Slip */}
+              <div className="pt-2 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
                 <button
                   type="button"
-                  onClick={handleSave}
-                  className="flex items-center space-x-1.5 px-5 py-2 bg-brand-maroon text-white font-bold text-xs rounded-lg hover:bg-brand-maroon-dark transition-all shadow-xs"
+                  onClick={() => handleSave(false)}
+                  className="flex items-center space-x-1.5 px-5 py-2 bg-brand-maroon text-white font-bold text-xs rounded-lg hover:bg-brand-maroon-dark transition-all shadow-xs cursor-pointer"
                 >
                   <Save className="h-4 w-4" />
                   <span>Execute Trade (सुरक्षित करें)</span>
                 </button>
+
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mobile = selectedCustomer?.mobile || '9645808999';
+                      const text = encodeURIComponent(
+                        `*Bullion ${txnType} Receipt - ${selectedCustomer?.name}*\nWeight: ${weight}g\nRate: ₹${rate}\nNet Cash: ₹${netCash}\nPaid: ₹${totalPaid}\nDeligo Technologies ERP`
+                      );
+                      window.open(`https://wa.me/91${mobile}?text=${text}`, '_blank');
+                    }}
+                    className="h-10 w-10 rounded-full border border-emerald-500 text-emerald-600 flex items-center justify-center hover:bg-emerald-50 transition-colors shadow-xs cursor-pointer"
+                    title="Share via WhatsApp"
+                  >
+                    <Share2 className="h-5 w-5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSave(true)}
+                    className="h-10 w-10 rounded-full border-2 border-red-800 text-red-800 flex items-center justify-center hover:bg-red-50 transition-colors shadow-xs cursor-pointer"
+                    title="Save & Print Thermal Receipt Slip"
+                  >
+                    <Printer className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Full Udhari Section (5 Cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="bg-white rounded-xl border-2 border-emerald-600/30 shadow-xs overflow-hidden">
-              <div className="bg-emerald-700 px-4 py-2 text-white flex items-center justify-between">
-                <div className="flex items-center space-x-1.5">
-                  <Layers className="h-4 w-4" />
-                  <h3 className="text-xs font-black uppercase tracking-wider">
-                    Udhari Section (उधारी सेक्शन)
-                  </h3>
+          {/* ========================================================= */}
+          {/* RIGHT CARD: Exact Reference Udhari Section (5 Cols)       */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-5 bg-white rounded-3xl border-2 border-amber-300 p-4 sm:p-5 shadow-sm space-y-3.5">
+            {/* Top Rates Row & Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="font-bold text-slate-700 whitespace-nowrap w-36 text-right">
+                    (बेचना) SALE RATE :
+                  </span>
+                  <div className="flex-1 relative">
+                    <input
+                      type="number"
+                      value={saleRate}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setSaleRate(val);
+                        updateMetalRates(metalMode, purchaseRate, val);
+                      }}
+                      onBlur={() => {
+                        updateMetalRates(metalMode, purchaseRate, saleRate);
+                        showToast(`Sale rate ₹${saleRate.toLocaleString('en-IN')} updated in Stock!`, 'info');
+                      }}
+                      className="w-full pl-3 pr-14 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:outline-none text-xs"
+                    />
+                    <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                      {isSilver ? '₹/1kg' : '₹/10gm'}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[10px] bg-emerald-800 px-2 py-0.5 rounded font-mono">
-                  {selectedCustomer ? `ID: #${selectedCustomer.customerNo}` : 'Select Customer'}
+
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="font-bold text-slate-700 whitespace-nowrap w-36 text-right">
+                    (खरीदना) PURCHASE RATE :
+                  </span>
+                  <div className="flex-1 relative">
+                    <input
+                      type="number"
+                      value={purchaseRate}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setPurchaseRate(val);
+                        updateMetalRates(metalMode, val, saleRate);
+                      }}
+                      onBlur={() => {
+                        updateMetalRates(metalMode, purchaseRate, saleRate);
+                        showToast(`Purchase rate ₹${purchaseRate.toLocaleString('en-IN')} updated in Stock!`, 'info');
+                      }}
+                      className="w-full pl-3 pr-14 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:outline-none text-xs"
+                    />
+                    <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                      {isSilver ? '₹/1kg' : '₹/10gm'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Top Right: Save, Settings, List, Sample Received */}
+              <div className="flex flex-col items-end space-y-1.5 shrink-0">
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await updateMetalRates(metalMode, purchaseRate, saleRate);
+                      await handleSave(false);
+                    }}
+                    className="h-7 w-7 rounded-full bg-[#822c22] text-white flex items-center justify-center hover:bg-[#6c231a] transition-colors cursor-pointer shadow-xs"
+                    title="Save Transaction & Update Stock Rates"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsExtraSettingsOpen(true)}
+                    className="h-7 w-7 rounded-full bg-[#822c22] text-white flex items-center justify-center hover:bg-[#6c231a] transition-colors cursor-pointer shadow-xs"
+                    title="Extra Settings"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('LIST')}
+                    className="px-3 py-1 rounded-full bg-[#822c22] text-white font-bold text-xs flex items-center space-x-1 hover:bg-[#6c231a] transition-colors cursor-pointer shadow-xs"
+                  >
+                    <ListIcon className="h-3.5 w-3.5" />
+                    <span>List</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSampleReceived(!sampleReceived);
+                    showToast(
+                      sampleReceived ? 'Sample marked as Pending' : 'Sample Marked as Received!',
+                      'info'
+                    );
+                  }}
+                  className={`px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border transition-all cursor-pointer ${
+                    sampleReceived
+                      ? 'border-emerald-600 text-emerald-800 bg-emerald-50'
+                      : 'border-amber-600 text-amber-900 bg-amber-50 hover:bg-amber-100'
+                  }`}
+                >
+                  SAMPLE RECIEVED {sampleReceived ? '✓' : ''}
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200 my-2" />
+
+            {/* Centered Udhari Section Title */}
+            <div className="text-center font-bold text-slate-800 text-xs tracking-wide">
+              Udhari Section
+            </div>
+
+            {/* Column Headers: Gold & Cash */}
+            <div className="grid grid-cols-12 gap-2 text-center text-xs font-bold text-slate-800">
+              <div className="col-span-3 text-right"></div>
+              <div className="col-span-4 text-center font-extrabold text-slate-900">Gold</div>
+              <div className="col-span-1"></div>
+              <div className="col-span-4 text-center font-extrabold text-slate-900">Cash</div>
+            </div>
+
+            {/* Row 1: (पुराना) Old : */}
+            <div className="grid grid-cols-12 gap-2 items-center text-xs">
+              <span className="col-span-3 font-bold text-slate-700 text-right whitespace-nowrap">
+                (पुराना) Old :
+              </span>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  step="0.001"
+                  value={oldGold}
+                  onChange={(e) => setOldGold(Number(e.target.value))}
+                  className="w-full pl-2 pr-7 py-1 rounded-full border-2 border-emerald-400 bg-emerald-50/70 font-black text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  gm
+                </span>
+              </div>
+              <div className="col-span-1"></div>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  value={oldCash}
+                  onChange={(e) => setOldCash(Number(e.target.value))}
+                  className="w-full pl-2 pr-5 py-1 rounded-full border-2 border-emerald-400 bg-emerald-50/70 font-black text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  ₹
+                </span>
+              </div>
+            </div>
+
+            {/* Row 2: Silver Old */}
+            <div className="grid grid-cols-12 gap-2 items-center text-xs">
+              <span className="col-span-3 font-bold text-slate-700 text-right whitespace-nowrap">
+                Silver Old
+              </span>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  step="0.001"
+                  value={oldSilver}
+                  onChange={(e) => setOldSilver(Number(e.target.value))}
+                  className={`w-full pl-2 pr-7 py-1 rounded-full border-2 border-emerald-400 bg-emerald-50/70 font-black text-center text-xs focus:outline-none ${
+                    oldSilver < 0 ? 'text-rose-600' : 'text-slate-900'
+                  }`}
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  gm
+                </span>
+              </div>
+              <div className="col-span-1"></div>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  value={oldSilverCash}
+                  onChange={(e) => setOldSilverCash(Number(e.target.value))}
+                  className="w-full pl-2 pr-5 py-1 rounded-full border-2 border-emerald-400 bg-emerald-50/70 font-black text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  ₹
+                </span>
+              </div>
+            </div>
+
+            {/* Row 3: Kch se Jama(+) : with [ + ] Button */}
+            <div className="grid grid-cols-12 gap-2 items-center text-xs">
+              <span className="col-span-3 font-bold text-slate-700 text-right whitespace-nowrap">
+                Kch se Jama(+) :
+              </span>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  step="0.001"
+                  value={kchJamaGold || ''}
+                  onChange={(e) => setKchJamaGold(Number(e.target.value))}
+                  placeholder="0.000"
+                  className="w-full pl-2 pr-7 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  gm
+                </span>
+              </div>
+              <div className="col-span-1 flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={handleFillKchJama}
+                  className="h-6 w-6 rounded-full bg-red-800 text-white flex items-center justify-center font-bold text-xs hover:bg-red-900 transition-colors shadow-xs cursor-pointer"
+                  title="Populate from Trade Weight"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  value={kchJamaCash || ''}
+                  onChange={(e) => setKchJamaCash(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full pl-2 pr-5 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  ₹
+                </span>
+              </div>
+            </div>
+
+            {/* Row 4: Kch se Udhar(-) : with [ - ] Button */}
+            <div className="grid grid-cols-12 gap-2 items-center text-xs">
+              <span className="col-span-3 font-bold text-slate-700 text-right whitespace-nowrap">
+                Kch se Udhar(-) :
+              </span>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  step="0.001"
+                  value={kchUdharGold || ''}
+                  onChange={(e) => setKchUdharGold(Number(e.target.value))}
+                  placeholder="0.000"
+                  className="w-full pl-2 pr-7 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  gm
+                </span>
+              </div>
+              <div className="col-span-1 flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={handleFillKchUdhar}
+                  className="h-6 w-6 rounded-full bg-red-800 text-white flex items-center justify-center font-bold text-xs hover:bg-red-900 transition-colors shadow-xs cursor-pointer"
+                  title="Populate from Trade Weight"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  value={kchUdharCash || ''}
+                  onChange={(e) => setKchUdharCash(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full pl-2 pr-5 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  ₹
+                </span>
+              </div>
+            </div>
+
+            {/* Row 5: Jama (+) : */}
+            <div className="grid grid-cols-12 gap-2 items-center text-xs">
+              <span className="col-span-3 font-bold text-slate-700 text-right whitespace-nowrap">
+                Jama (+) :
+              </span>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  step="0.001"
+                  value={jamaGold || ''}
+                  onChange={(e) => setJamaGold(Number(e.target.value))}
+                  placeholder="0.000"
+                  className="w-full pl-2 pr-7 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  gm
+                </span>
+              </div>
+              <div className="col-span-1"></div>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  value={jamaCash || ''}
+                  onChange={(e) => setJamaCash(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full pl-2 pr-5 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  ₹
+                </span>
+              </div>
+            </div>
+
+            {/* Row 6: Udhar (-) : */}
+            <div className="grid grid-cols-12 gap-2 items-center text-xs">
+              <span className="col-span-3 font-bold text-slate-700 text-right whitespace-nowrap">
+                Udhar (-) :
+              </span>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  step="0.001"
+                  value={udharGold || ''}
+                  onChange={(e) => setUdharGold(Number(e.target.value))}
+                  placeholder="0.000"
+                  className="w-full pl-2 pr-7 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  gm
+                </span>
+              </div>
+              <div className="col-span-1"></div>
+              <div className="col-span-4 relative">
+                <input
+                  type="number"
+                  value={udharCash || ''}
+                  onChange={(e) => setUdharCash(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full pl-2 pr-5 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center text-xs focus:outline-none"
+                />
+                <span className="absolute right-2 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  ₹
+                </span>
+              </div>
+            </div>
+
+            {/* Row 7: Final : */}
+            <div className="grid grid-cols-12 gap-2 items-center text-xs pt-1">
+              <span className="col-span-3 font-extrabold text-slate-900 text-right whitespace-nowrap">
+                Final :
+              </span>
+              <div className="col-span-4 relative">
+                <div
+                  className={`w-full pl-2 pr-7 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-100/90 font-black text-center text-xs ${
+                    finalGold >= 0 ? 'text-emerald-950' : 'text-rose-700'
+                  }`}
+                >
+                  {finalGold.toFixed(3)}
+                </div>
+                <span className="absolute right-2 top-1.5 font-black text-emerald-900 text-[10px]">
+                  gm
+                </span>
+              </div>
+              <div className="col-span-1"></div>
+              <div className="col-span-4 relative">
+                <div
+                  className={`w-full pl-2 pr-5 py-1.5 rounded-full border-2 border-emerald-500 bg-emerald-100/90 font-black text-center text-xs ${
+                    finalCashTotal >= 0 ? 'text-emerald-950' : 'text-rose-700'
+                  }`}
+                >
+                  {finalCashTotal.toLocaleString('en-IN')}
+                </div>
+                <span className="absolute right-2 top-1.5 font-black text-emerald-900 text-[10px]">
+                  ₹
+                </span>
+              </div>
+            </div>
+
+            {/* Row 8: Quick Bhavcut Conversion Controls (< rate >) */}
+            <div className="flex items-center justify-center space-x-1.5 pt-2">
+              <button
+                type="button"
+                onClick={handleBhavcutCashToGold}
+                className="h-7 w-7 rounded-md bg-[#822c22] text-white flex items-center justify-center font-bold text-sm hover:bg-[#6c231a] transition-colors cursor-pointer shadow-xs"
+                title="Convert Cash to Gold (<)"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div className="w-48 relative">
+                <input
+                  type="number"
+                  value={bhavcutRate}
+                  onChange={(e) => setBhavcutRate(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full pl-3 pr-14 py-1 rounded-full border border-slate-400 font-bold text-slate-900 text-center focus:outline-none text-xs"
+                />
+                <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  {isSilver ? '₹/1kg' : '₹/10gm'}
                 </span>
               </div>
 
-              <div className="p-4 space-y-3 text-xs">
-                {/* Active Metal Udhari Grid */}
-                <div className="space-y-1.5 pb-3 border-b border-slate-200">
-                  <div className="flex items-center justify-between font-bold text-slate-800">
-                    <span>{isSilver ? '(चाँदी) Silver Ledger' : '(सोना) Gold Ledger'}</span>
-                    <span className="font-mono text-[11px] text-slate-500">gm</span>
-                  </div>
+              <button
+                type="button"
+                onClick={handleBhavcutGoldToCash}
+                className="h-7 w-7 rounded-md bg-[#822c22] text-white flex items-center justify-center font-bold text-sm hover:bg-[#6c231a] transition-colors cursor-pointer shadow-xs"
+                title="Convert Gold to Cash (>)"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                      <span className="text-slate-500 block text-[10px]">(पुराना) Old:</span>
-                      <span className="font-bold text-slate-900">
-                        {isSilver
-                          ? oldSilverBal < 0
-                            ? `{-${Math.abs(oldSilverBal).toFixed(3)} gm}`
-                            : `${oldSilverBal.toFixed(3)} gm`
-                          : `${oldGoldBal.toFixed(3)} gm`}
-                      </span>
-                    </div>
-                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                      <span className="text-slate-500 block text-[10px]">
-                        {isSilver ? 'Gold Old:' : 'Silver Old:'}
-                      </span>
-                      <span className="font-bold text-rose-700">
-                        {isSilver
-                          ? `${oldGoldBal.toFixed(3)} gm`
-                          : oldSilverBal < 0
-                          ? `{-${Math.abs(oldSilverBal).toFixed(3)} gm}`
-                          : `${oldSilverBal.toFixed(3)} gm`}
-                      </span>
-                    </div>
-                  </div>
+            {/* Row 9: Write Narration / Remark Textarea */}
+            <div className="pt-1">
+              <textarea
+                rows={2}
+                value={narration}
+                onChange={(e) => setNarration(e.target.value)}
+                placeholder="Write Narration/Remark"
+                className="w-full px-3 py-1.5 rounded-xl border border-slate-400 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 resize-none"
+              />
+            </div>
 
-                  <div className="p-2 rounded-lg bg-emerald-100/70 border border-emerald-300 flex items-center justify-between">
-                    <span className="font-bold text-emerald-950 text-xs">
-                      FINAL {isSilver ? 'SILVER' : 'GOLD'}:
-                    </span>
-                    <span
-                      className={`font-black text-sm font-mono ${
-                        (isSilver ? (oldSilverBal + (txnType === 'BUY' ? weight : -weight)) : newGoldBal) >= 0 ? 'text-emerald-900' : 'text-rose-700'
-                      }`}
-                    >
-                      {(isSilver ? (oldSilverBal + (txnType === 'BUY' ? weight : -weight)) : newGoldBal) >= 0 ? '+' : ''}
-                      {(isSilver ? (oldSilverBal + (txnType === 'BUY' ? weight : -weight)) : newGoldBal).toFixed(3)} gm
-                    </span>
-                  </div>
-                </div>
-
-                {/* Cash Udhari Grid */}
-                <div className="space-y-1.5 pb-3 border-b border-slate-200">
-                  <div className="flex items-center justify-between font-bold text-slate-800">
-                    <span>(पैसे) Cash Ledger</span>
-                    <span className="font-mono text-[11px] text-slate-500">₹ (INR)</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                      <span className="text-slate-500 block text-[10px]">(पुराना) Old:</span>
-                      <span className="font-bold text-slate-900">
-                        ₹ {oldCashBal.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                      <span className="text-slate-500 block text-[10px]">Old Silver Amt:</span>
-                      <span className="font-bold text-slate-900">₹ 0</span>
-                    </div>
-                  </div>
-
-                  <div className="p-2 rounded-lg bg-emerald-100/70 border border-emerald-300 flex items-center justify-between">
-                    <span className="font-bold text-emerald-950 text-xs">FINAL CASH:</span>
-                    <span
-                      className={`font-black text-sm font-mono ${
-                        newCashBal >= 0 ? 'text-emerald-900' : 'text-rose-700'
-                      }`}
-                    >
-                      ₹ {newCashBal.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Inline Bhavcut Conversion Bar */}
-                <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-300 space-y-2">
-                  <div className="flex items-center space-x-1.5 text-xs font-bold text-amber-900">
-                    <Calculator className="h-3.5 w-3.5 text-amber-700" />
-                    <span>Inline Bhavcut Conversion</span>
-                  </div>
-
-                  <div className="flex items-center space-x-1">
-                    <button
-                      type="button"
-                      onClick={handleInlineBhavcutAmtToGold}
-                      className="px-2 py-1 bg-amber-600 text-white font-black text-xs rounded hover:bg-amber-700"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <input
-                      type="number"
-                      value={bhavcutAmt || ''}
-                      onChange={(e) => setBhavcutAmt(Number(e.target.value))}
-                      placeholder="Amount ₹"
-                      className="w-full px-2 py-1 text-xs rounded border border-amber-300 bg-white"
-                    />
-                    <div className="text-[10px] font-bold text-slate-600 shrink-0">
-                      @{rate}/10g
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleInlineBhavcutGoldToAmt}
-                      className="px-2 py-1 bg-amber-600 text-white font-black text-xs rounded hover:bg-amber-700"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  {bhavcutGold > 0 && (
-                    <div className="text-[11px] font-bold text-amber-900">
-                      = {bhavcutGold.toFixed(3)} gm Pure Gold
-                    </div>
-                  )}
-                </div>
-
-                {/* Print and WhatsApp Actions */}
-                <div className="flex items-center space-x-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className="flex-1 flex items-center justify-center space-x-1 py-2 bg-emerald-700 text-white font-bold text-xs rounded-lg hover:bg-emerald-800 transition-all shadow-xs"
-                  >
-                    <Printer className="h-4 w-4" />
-                    <span>Print Slip</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => showToast('Shared slip via WhatsApp!')}
-                    className="flex-1 flex items-center justify-center space-x-1 py-2 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-700 transition-all shadow-xs"
-                  >
-                    <Share2 className="h-4 w-4" />
-                    <span>WhatsApp</span>
-                  </button>
-                </div>
-              </div>
+            {/* Row 10: Centered Big Printer Icon Action Button */}
+            <div className="flex items-center justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => handleSave(true)}
+                className="p-3 rounded-2xl border-2 border-red-800 text-red-800 hover:bg-red-50 hover:scale-105 transition-all shadow-xs cursor-pointer flex items-center justify-center"
+                title="Print Slip & Save with Udhari"
+              >
+                <Printer className="h-7 w-7" />
+              </button>
             </div>
           </div>
         </div>
@@ -726,6 +1128,19 @@ export const BuySellPage: React.FC = () => {
           <DataTable data={transactions} columns={columns} searchPlaceholder="Search by customer, trade ID..." />
         </div>
       )}
+
+      {/* 3-Inch Thermal Receipt Modal */}
+      <ThermalReceiptModal
+        isOpen={!!selectedReceipt}
+        onClose={() => setSelectedReceipt(null)}
+        transaction={selectedReceipt}
+      />
+
+      {/* Extra Settings Modal */}
+      <ExtraSettingsModal
+        isOpen={isExtraSettingsOpen}
+        onClose={() => setIsExtraSettingsOpen(false)}
+      />
     </div>
   );
 };

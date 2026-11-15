@@ -1,5 +1,6 @@
 import { BuySellTransaction } from '../types';
 import { getItem, setItem } from './storage';
+import { customerService } from './customerService';
 
 const STORAGE_KEY = 'hs_buysell_txns';
 
@@ -24,6 +25,19 @@ export const buySellService = {
 
     txns.unshift(newTxn);
     setItem(STORAGE_KEY, txns);
+
+    // Automatically update customer udhari balance
+    if (data.customerId) {
+      if (data.udhariAfter) {
+        await customerService.setExactBalance(
+          data.customerId,
+          data.udhariAfter.gold,
+          data.udhariAfter.cash,
+          data.udhariAfter.silver
+        );
+      }
+    }
+
     return newTxn;
   },
 };
