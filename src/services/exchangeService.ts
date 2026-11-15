@@ -33,14 +33,21 @@ export const exchangeService = {
     setItem(STORAGE_KEY, txns);
 
     // Automatically update customer udhari balance
-    // diffGold: positive means customer owes gold, so subtract from customer's credit / add to debt
-    // finalCash: positive means customer owes cash
     if (data.customerId) {
-      await customerService.updateBalance(
-        data.customerId,
-        data.type === 'BUY' ? data.diffGold : -data.diffGold,
-        data.type === 'BUY' ? data.finalCash : -data.finalCash
-      );
+      if (data.udhariAfter) {
+        await customerService.setExactBalance(
+          data.customerId,
+          data.udhariAfter.gold,
+          data.udhariAfter.cash,
+          data.udhariAfter.silver
+        );
+      } else {
+        await customerService.updateBalance(
+          data.customerId,
+          data.type === 'BUY' ? data.diffGold : -data.diffGold,
+          data.type === 'BUY' ? data.finalCash : -data.finalCash
+        );
+      }
     }
 
     return newTxn;

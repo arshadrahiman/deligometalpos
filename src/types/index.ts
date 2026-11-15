@@ -71,11 +71,23 @@ export interface ExchangeTransaction {
     gold: number;
     cash: number;
     silver?: number;
+    silverCash?: number;
   };
   udhariAfter: {
     gold: number;
     cash: number;
     silver?: number;
+    silverCash?: number;
+  };
+  udhariDetails?: {
+    kchJamaGold?: number;
+    kchJamaCash?: number;
+    kchUdharGold?: number;
+    kchUdharCash?: number;
+    jamaGold?: number;
+    jamaCash?: number;
+    udharGold?: number;
+    udharCash?: number;
   };
   narration?: string;
 }

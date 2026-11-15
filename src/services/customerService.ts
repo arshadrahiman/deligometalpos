@@ -67,6 +67,24 @@ export const customerService = {
     });
   },
 
+  async setExactBalance(
+    customerId: string,
+    gold: number,
+    cash: number,
+    silver?: number
+  ): Promise<Customer | null> {
+    const customer = await this.getById(customerId);
+    if (!customer) return null;
+    return this.update(customerId, {
+      balance: {
+        ...customer.balance,
+        gold: Math.round(gold * 1000) / 1000,
+        cash: Math.round(cash * 100) / 100,
+        silver: silver !== undefined ? Math.round(silver * 1000) / 1000 : customer.balance.silver,
+      },
+    });
+  },
+
   async delete(id: string): Promise<boolean> {
     const customers = await this.getAll();
     const filtered = customers.filter((c) => c.id !== id);
