@@ -16,8 +16,6 @@ import { ThermalReceiptModal } from '../../components/common/ThermalReceiptModal
 import { ExtraSettingsModal } from '../../components/settings/ExtraSettingsModal';
 import { ColumnDef } from '@tanstack/react-table';
 import {
-  TrendingUp,
-  TrendingDown,
   PlusCircle,
   List as ListIcon,
   Save,
@@ -422,25 +420,11 @@ export const BuySellPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Rates Badges */}
         <div className="flex items-center space-x-3 text-xs">
-          <div className="flex items-center space-x-1.5 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">
-            <TrendingDown className="h-3.5 w-3.5 text-rose-600" />
-            <span className="text-slate-600 font-semibold">(बेचना) SALE RATE:</span>
-            <span className="font-black text-rose-700">₹{saleRate.toLocaleString('en-IN')}</span>
-            <span className="text-[10px] text-slate-400">{isSilver ? '₹/kg' : '₹/10gm'}</span>
-          </div>
-
-          <div className="flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-            <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-            <span className="text-slate-600 font-semibold">(खरीदना) PURCHASE RATE:</span>
-            <span className="font-black text-emerald-700">₹{purchaseRate.toLocaleString('en-IN')}</span>
-            <span className="text-[10px] text-slate-400">{isSilver ? '₹/kg' : '₹/10gm'}</span>
-          </div>
-
           <button
+            type="button"
             onClick={openBhavcutModal}
-            className="px-2.5 py-1 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 text-xs shadow-xs"
+            className="px-3 py-1.5 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 text-xs shadow-xs cursor-pointer transition-colors"
           >
             Bhav Booking
           </button>
