@@ -61,11 +61,12 @@ export const BuySellPage: React.FC = () => {
   const [oldSilver, setOldSilver] = useState<number>(0.0);
   const [oldSilverCash, setOldSilverCash] = useState<number>(0);
 
-  const [kchJamaGold, setKchJamaGold] = useState<number>(0.0);
-  const [kchJamaCash, setKchJamaCash] = useState<number>(0);
+  // Manual input overrides for Kch fields (null = auto-calculated)
+  const [kchJamaGoldInput, setKchJamaGoldInput] = useState<number | null>(null);
+  const [kchJamaCashInput, setKchJamaCashInput] = useState<number | null>(null);
 
-  const [kchUdharGold, setKchUdharGold] = useState<number>(0.0);
-  const [kchUdharCash, setKchUdharCash] = useState<number>(0);
+  const [kchUdharGoldInput, setKchUdharGoldInput] = useState<number | null>(null);
+  const [kchUdharCashInput, setKchUdharCashInput] = useState<number | null>(null);
 
   const [jamaGold, setJamaGold] = useState<number>(0.0);
   const [jamaCash, setJamaCash] = useState<number>(0);
@@ -89,6 +90,18 @@ export const BuySellPage: React.FC = () => {
       const defaultCust = list.find((c) => c.customerNo === 100) || list[0] || null;
       if (defaultCust) {
         setSelectedCustomer(defaultCust);
+      } else {
+        customerService.create({
+          name: 'XYZ',
+          mobile: '9645808999',
+          shopName: 'XYZ Jewellers',
+          category: 'Jewelry Owner',
+          address: { city: 'Bhopal', state: 'Madhya Pradesh (23)' },
+          taxDetails: { panNo: 'XYZPA1234K' },
+          balance: { gold: 0.0, cash: 23530, silver: -413.043 },
+        }).then((created) => {
+          setSelectedCustomer(created);
+        });
       }
     });
   }, [fetchStock]);
@@ -137,6 +150,23 @@ export const BuySellPage: React.FC = () => {
   const { grossCash, netCash } = calculateBuySellNet(weight, rate, discount);
   const totalPaid = (cashRecv || 0) + (onlineRecv || 0) + (bank2Recv || 0);
 
+  // Auto-calculated Kch se Jama and Kch se Udhar from Buy/Sell
+  const autoKchJamaGold = txnType === 'BUY' && weight > 0 ? weight : 0.0;
+  const autoKchUdharGold = txnType === 'SELL' && weight > 0 ? weight : 0.0;
+
+  const autoKchJamaCash = txnType === 'BUY' && netCash > 0 ? netCash : 0;
+  const autoKchUdharCash = txnType === 'SELL' && netCash > 0 ? netCash : 0;
+
+  const kchJamaGold = kchJamaGoldInput !== null ? kchJamaGoldInput : autoKchJamaGold;
+  const kchJamaCash = kchJamaCashInput !== null ? kchJamaCashInput : autoKchJamaCash;
+  const kchUdharGold = kchUdharGoldInput !== null ? kchUdharGoldInput : autoKchUdharGold;
+  const kchUdharCash = kchUdharCashInput !== null ? kchUdharCashInput : autoKchUdharCash;
+
+  const setKchJamaGold = (v: number) => setKchJamaGoldInput(v);
+  const setKchJamaCash = (v: number) => setKchJamaCashInput(v);
+  const setKchUdharGold = (v: number) => setKchUdharGoldInput(v);
+  const setKchUdharCash = (v: number) => setKchUdharCashInput(v);
+
   // Real-time Udhari Section Final Calculation (EXACT MATHEMATICAL ENGINE AS EXCHANGE MODULE)
   const finalGold = Math.round((oldGold + kchJamaGold - kchUdharGold + jamaGold - udharGold) * 1000) / 1000;
   const finalCashTotal = Math.round((oldCash + kchJamaCash - kchUdharCash + jamaCash - udharCash) * 100) / 100;
@@ -144,14 +174,18 @@ export const BuySellPage: React.FC = () => {
   // Actions for Udhari Buttons
   const handleFillKchJama = () => {
     const val = weight > 0 ? weight : 0;
-    setKchJamaGold(val);
-    showToast(`Kch se Jama(+) filled with ${val.toFixed(3)} gm`, 'success');
+    setKchJamaGoldInput(val);
+    const cVal = netCash > 0 ? netCash : 0;
+    setKchJamaCashInput(cVal);
+    showToast(`Kch se Jama(+) filled with ${val.toFixed(3)} gm & ₹${cVal.toLocaleString('en-IN')}`, 'success');
   };
 
   const handleFillKchUdhar = () => {
     const val = weight > 0 ? weight : 0;
-    setKchUdharGold(val);
-    showToast(`Kch se Udhar(-) filled with ${val.toFixed(3)} gm`, 'info');
+    setKchUdharGoldInput(val);
+    const cVal = netCash > 0 ? netCash : 0;
+    setKchUdharCashInput(cVal);
+    showToast(`Kch se Udhar(-) filled with ${val.toFixed(3)} gm & ₹${cVal.toLocaleString('en-IN')}`, 'info');
   };
 
   const handleBhavcutCashToGold = () => {
@@ -252,6 +286,25 @@ export const BuySellPage: React.FC = () => {
       'success'
     );
     loadTransactions();
+
+    // Reset form inputs for next transaction and advance running balance
+    setWeight(0);
+    setDiscount(0);
+    setCashRecv(0);
+    setOnlineRecv(0);
+    setBank2Recv(0);
+    setKchJamaGoldInput(null);
+    setKchJamaCashInput(null);
+    setKchUdharGoldInput(null);
+    setKchUdharCashInput(null);
+    setJamaGold(0);
+    setJamaCash(0);
+    setUdharGold(0);
+    setUdharCash(0);
+    setNarration('');
+    setRemarks('');
+    setOldGold(finalGold);
+    setOldCash(finalCashTotal);
 
     if (openSlip) {
       setSelectedReceipt(newTxn);

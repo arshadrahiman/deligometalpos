@@ -117,11 +117,12 @@ export const ExchangePage: React.FC = () => {
   const [oldSilver, setOldSilver] = useState<number>(0.0);
   const [oldSilverCash, setOldSilverCash] = useState<number>(0);
 
-  const [kchJamaGold, setKchJamaGold] = useState<number>(0.0);
-  const [kchJamaCash, setKchJamaCash] = useState<number>(0);
+  // Manual input overrides for Kch fields (null = auto-calculated)
+  const [kchJamaGoldInput, setKchJamaGoldInput] = useState<number | null>(null);
+  const [kchJamaCashInput, setKchJamaCashInput] = useState<number | null>(null);
 
-  const [kchUdharGold, setKchUdharGold] = useState<number>(0.0);
-  const [kchUdharCash, setKchUdharCash] = useState<number>(0);
+  const [kchUdharGoldInput, setKchUdharGoldInput] = useState<number | null>(null);
+  const [kchUdharCashInput, setKchUdharCashInput] = useState<number | null>(null);
 
   const [jamaGold, setJamaGold] = useState<number>(0.0);
   const [jamaCash, setJamaCash] = useState<number>(0);
@@ -149,6 +150,19 @@ export const ExchangePage: React.FC = () => {
       const defaultCust = list.find((c) => c.customerNo === 100) || list[0] || null;
       if (defaultCust) {
         setSelectedCustomer(defaultCust);
+      } else {
+        // Benchmark default customer #100 XYZ matching reference site
+        customerService.create({
+          name: 'XYZ',
+          mobile: '9645808999',
+          shopName: 'XYZ Jewellers',
+          category: 'Jewelry Owner',
+          address: { city: 'Bhopal', state: 'Madhya Pradesh (23)' },
+          taxDetails: { panNo: 'XYZPA1234K' },
+          balance: { gold: 0.0, cash: 23530, silver: -413.043 },
+        }).then((created) => {
+          setSelectedCustomer(created);
+        });
       }
     });
   }, [fetchStock]);
@@ -305,6 +319,34 @@ export const ExchangePage: React.FC = () => {
     setFinalCashInput(null);
   };
 
+  // Real-time Udhari Section Auto-Calculations
+  // 1. Gold auto-fill:
+  const autoKchJamaGold = diffGold > 0 ? diffGold : 0.0;
+  const autoKchUdharGold = diffGold < 0 ? Math.abs(diffGold) : 0.0;
+
+  // 2. Cash auto-fill:
+  // In BUY mode: finalCash > 0 is credit to customer; finalCash < 0 is charges fee owed by customer
+  // In SELL mode: finalCash > 0 is purchase balance owed by customer; finalCash < 0 is credit to customer
+  const autoKchJamaCash =
+    txnType === 'BUY'
+      ? (finalCash > 0 ? finalCash : 0)
+      : (finalCash < 0 ? Math.abs(finalCash) : 0);
+
+  const autoKchUdharCash =
+    txnType === 'BUY'
+      ? (finalCash < 0 ? Math.abs(finalCash) : 0)
+      : (finalCash > 0 ? finalCash : 0);
+
+  const kchJamaGold = kchJamaGoldInput !== null ? kchJamaGoldInput : autoKchJamaGold;
+  const kchJamaCash = kchJamaCashInput !== null ? kchJamaCashInput : autoKchJamaCash;
+  const kchUdharGold = kchUdharGoldInput !== null ? kchUdharGoldInput : autoKchUdharGold;
+  const kchUdharCash = kchUdharCashInput !== null ? kchUdharCashInput : autoKchUdharCash;
+
+  const setKchJamaGold = (v: number) => setKchJamaGoldInput(v);
+  const setKchJamaCash = (v: number) => setKchJamaCashInput(v);
+  const setKchUdharGold = (v: number) => setKchUdharGoldInput(v);
+  const setKchUdharCash = (v: number) => setKchUdharCashInput(v);
+
   // Real-time Udhari Section Final Calculation (EXACT MATHEMATICAL ENGINE)
   const finalGold = Math.round((oldGold + kchJamaGold - kchUdharGold + jamaGold - udharGold) * 1000) / 1000;
   const finalCashTotal = Math.round((oldCash + kchJamaCash - kchUdharCash + jamaCash - udharCash) * 100) / 100;
@@ -312,25 +354,18 @@ export const ExchangePage: React.FC = () => {
   // Actions for Udhari Buttons
   const handleFillKchJama = () => {
     const val = diffGold > 0 ? diffGold : fineGold > 0 ? fineGold : 0;
-    setKchJamaGold(val);
-    if (finalCash > 0) {
-      const unpaid = Math.max(0, Math.round((finalCash - givenCash - onlineGivenRtgs - selfBank2GivenRtgs) * 100) / 100);
-      setKchJamaCash(unpaid > 0 ? unpaid : finalCash);
-    }
-    showToast(`Kch se Jama(+) filled with ${val.toFixed(3)} gm`, 'success');
+    setKchJamaGoldInput(val);
+    const cashVal = finalCash > 0 ? finalCash : 0;
+    setKchJamaCashInput(cashVal);
+    showToast(`Kch se Jama(+) filled with ${val.toFixed(3)} gm & ₹${cashVal.toLocaleString('en-IN')}`, 'success');
   };
 
   const handleFillKchUdhar = () => {
     const val = diffGold < 0 ? Math.abs(diffGold) : settledGold > 0 ? settledGold : 0;
-    setKchUdharGold(val);
-    if (finalCash < 0) {
-      const unpaid = Math.max(0, Math.round((Math.abs(finalCash) - recievedCash - onlineRecivRtgs - selfBank2RecivRtgs) * 100) / 100);
-      setKchUdharCash(unpaid > 0 ? unpaid : Math.abs(finalCash));
-    } else if (txnType === 'SELL' && finalCash > 0) {
-      const unpaid = Math.max(0, Math.round((finalCash - recievedCash - onlineRecivRtgs - selfBank2RecivRtgs) * 100) / 100);
-      setKchUdharCash(unpaid > 0 ? unpaid : finalCash);
-    }
-    showToast(`Kch se Udhar(-) filled with ${val.toFixed(3)} gm`, 'info');
+    setKchUdharGoldInput(val);
+    const cashVal = finalCash < 0 ? Math.abs(finalCash) : txnType === 'SELL' && finalCash > 0 ? finalCash : 0;
+    setKchUdharCashInput(cashVal);
+    showToast(`Kch se Udhar(-) filled with ${val.toFixed(3)} gm & ₹${cashVal.toLocaleString('en-IN')}`, 'info');
   };
 
   const handleBhavcutCashToGold = () => {
@@ -470,10 +505,10 @@ export const ExchangePage: React.FC = () => {
     setDiffGoldInput(null);
     setDiffAmountInput(null);
     setFinalCashInput(null);
-    setKchJamaGold(0);
-    setKchJamaCash(0);
-    setKchUdharGold(0);
-    setKchUdharCash(0);
+    setKchJamaGoldInput(null);
+    setKchJamaCashInput(null);
+    setKchUdharGoldInput(null);
+    setKchUdharCashInput(null);
     setJamaGold(0);
     setJamaCash(0);
     setUdharGold(0);
