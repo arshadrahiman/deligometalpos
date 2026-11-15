@@ -66,3 +66,4 @@ base-uri 'self';
 
 - **Vitest Security Suite**: `src/utils/security.test.ts` (7 automated test specifications covering hashing, XSS sanitization, exploit defense, rate-limiting, and prototype pollution defense).
 - **Total Calculation & Security Tests**: **69 tests passing with 100% assertion coverage**.
+

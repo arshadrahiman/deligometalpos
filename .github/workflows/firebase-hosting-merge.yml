@@ -1,0 +1,60 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+  deployments: write
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Test Suite (Vitest)
+        run: npm test
+
+      - name: Build Production Bundle
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting (Service Account)
+        id: deploy_sa
+        if: env.HAS_SA == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS }}'
+          channelId: live
+          projectId: deligometalpos
+        env:
+          HAS_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS != '' }}
+
+      - name: Deploy to Firebase Hosting (CLI Token Fallback)
+        if: steps.deploy_sa.outcome != 'success'
+        run: |
+          if [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
+            npx firebase-tools deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project deligometalpos
+          elif [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS }}" ]; then
+            echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS }}' > sa.json
+            export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/sa.json
+            npx firebase-tools deploy --only hosting --project deligometalpos
+            rm -f sa.json
+          else
+            echo "Waiting for Firebase credentials secret (FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS or FIREBASE_TOKEN)."
+          fi

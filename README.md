@@ -1,21 +1,21 @@
 # Deligo Metal POS (बदला / पलटा व उधार बहीखाता)
 
-[![Deploy to GitHub Pages](https://github.com/arshadrahiman/deligometalpos/actions/workflows/deploy.yml/badge.svg)](https://github.com/arshadrahiman/deligometalpos/actions/workflows/deploy.yml)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-0f2744?style=flat&logo=github)](https://arshadrahiman.github.io/deligometalpos/)
-[![Tests](https://img.shields.io/badge/Vitest-62%20passed-22c55e?style=flat)](https://github.com/arshadrahiman/deligometalpos)
+[![Deploy to Firebase Hosting](https://github.com/arshadrahiman/deligometalpos/actions/workflows/firebase-hosting-merge.yml/badge.svg)](https://github.com/arshadrahiman/deligometalpos/actions/workflows/firebase-hosting-merge.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Firebase%20Hosting-ffca28?style=flat&logo=firebase)](https://deligometalpos.web.app/)
+[![Tests](https://img.shields.io/badge/Vitest-69%20passed-22c55e?style=flat)](https://github.com/arshadrahiman/deligometalpos)
 [![React](https://img.shields.io/badge/React-18-61dafb?style=flat&logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-5-646cff?style=flat&logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat&logo=tailwindcss)](https://tailwindcss.com/)
 
-**Deligo Metal POS** is a pixel-accurate, high-performance Bullion & Jewellery ERP Point-of-Sale (POS) and accounting web application built with **React 18**, **Vite**, **TypeScript**, and **Tailwind CSS**.
+**Deligo Metal POS** is a pixel-accurate, high-performance Bullion & Jewellery ERP Point-of-Sale (POS) and accounting web application built with **React 18**, **Vite**, **TypeScript**, and **Tailwind CSS**, hosted on **Firebase Hosting**.
 
 ---
 
 ## 🚀 Live Demo & Access
 
-- **Live URL**: [https://arshadrahiman.github.io/deligometalpos/](https://arshadrahiman.github.io/deligometalpos/)
+- **Live URL**: [https://deligometalpos.web.app/](https://deligometalpos.web.app/) (or [https://deligometalpos.firebaseapp.com/](https://deligometalpos.firebaseapp.com/))
 - **Demo Login**:
-  - **Mobile No**: `9645808999` 
+  - **Mobile No**: `9645808999` (or `7879404501`)
   - **Password**: `12345`
 
 ---
