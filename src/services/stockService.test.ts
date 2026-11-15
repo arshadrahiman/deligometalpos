@@ -90,4 +90,49 @@ describe('Production Data & Stock Calibration Service', () => {
     expect(countsAfter.customerCount).toBe(0);
     expect(countsAfter.totalRecords).toBe(0);
   });
+
+  it('updates purchase rate and sell rate in stock section for gold and silver', async () => {
+    const updatedGold = await stockService.updateMetalRates('GOLD', 140000, 144500);
+    expect(updatedGold.pureGoldStock.avgBuyRate).toBe(140000);
+    expect(updatedGold.pureGoldStock.avgSellRate).toBe(144500);
+    expect(updatedGold.marketRates.gold24K).toBe(140000);
+
+    const updatedSilver = await stockService.updateMetalRates('SILVER', 95000, 98000);
+    expect(updatedSilver.silverStock.avgRate).toBe(95000);
+    expect(updatedSilver.silverStock.avgSellRate).toBe(98000);
+    expect(updatedSilver.marketRates.silver1Kg).toBe(95000);
+  });
+
+  it('records transaction impact on stock inventory and cash', async () => {
+    // Calibrate initial stock
+    await stockService.saveCalibration({
+      liquidCash: 500000,
+      pureGoldStock: {
+        weightGm: 100,
+        avgBuyRate: 140000,
+        avgSellRate: 144500,
+        todayBuyWeight: 0,
+        todaySellWeight: 0,
+      },
+      marketRates: {
+        gold24K: 140000,
+        gold22K: 128300,
+        silver1Kg: 95000,
+      },
+    });
+
+    // Record BUY transaction of 10g at 140000 (diffCash: 140000)
+    const afterBuy = await stockService.recordTransactionImpact({
+      metal: 'GOLD',
+      type: 'BUY',
+      fineWeight: 10,
+      rate: 140000,
+      cashAmount: 140000,
+    });
+
+    expect(afterBuy.pureGoldStock.weightGm).toBe(110);
+    expect(afterBuy.pureGoldStock.todayBuyWeight).toBe(10);
+    expect(afterBuy.pureGoldStock.avgBuyRate).toBe(140000);
+    expect(afterBuy.liquidCash).toBe(360000);
+  });
 });

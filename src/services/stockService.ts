@@ -131,6 +131,99 @@ export const stockService = {
     });
   },
 
+  async updateMetalRates(
+    metal: 'GOLD' | 'SILVER',
+    purchaseRate: number,
+    saleRate: number
+  ): Promise<BusinessStockSummary> {
+    const current = await this.getSummary();
+    const isGold = metal === 'GOLD';
+
+    const updated: BusinessStockSummary = {
+      ...current,
+      pureGoldStock: isGold
+        ? {
+            ...current.pureGoldStock,
+            avgBuyRate: purchaseRate > 0 ? purchaseRate : current.pureGoldStock.avgBuyRate,
+            avgSellRate: saleRate > 0 ? saleRate : current.pureGoldStock.avgSellRate,
+          }
+        : current.pureGoldStock,
+      silverStock: !isGold
+        ? {
+            ...current.silverStock,
+            avgRate: purchaseRate > 0 ? purchaseRate : current.silverStock.avgRate,
+            avgSellRate: saleRate > 0 ? saleRate : (current.silverStock.avgSellRate || current.silverStock.avgRate),
+          }
+        : current.silverStock,
+      marketRates: {
+        ...current.marketRates,
+        gold24K: isGold && (purchaseRate > 0 || saleRate > 0) ? (purchaseRate || saleRate) : current.marketRates.gold24K,
+        silver1Kg: !isGold && (purchaseRate > 0 || saleRate > 0) ? (purchaseRate || saleRate) : current.marketRates.silver1Kg,
+      },
+    };
+
+    updated.totalBusinessWorth = calculateBusinessWorth(updated);
+    setItem(STORAGE_KEY, updated);
+    return updated;
+  },
+
+  async recordTransactionImpact(params: {
+    metal: 'GOLD' | 'SILVER';
+    type: 'BUY' | 'SELL';
+    fineWeight: number;
+    rate: number;
+    cashAmount: number;
+  }): Promise<BusinessStockSummary> {
+    const current = await this.getSummary();
+    const isGold = params.metal === 'GOLD';
+    const isBuy = params.type === 'BUY';
+
+    const weightDelta = isBuy ? params.fineWeight : -params.fineWeight;
+    const cashDelta = isBuy ? -params.cashAmount : params.cashAmount;
+
+    const updated: BusinessStockSummary = {
+      ...current,
+      liquidCash: Math.round((current.liquidCash + cashDelta) * 100) / 100,
+      pureGoldStock: isGold
+        ? {
+            ...current.pureGoldStock,
+            weightGm: Math.max(0, Math.round((current.pureGoldStock.weightGm + weightDelta) * 1000) / 1000),
+            avgBuyRate: isBuy && params.rate > 0 ? params.rate : current.pureGoldStock.avgBuyRate,
+            avgSellRate: !isBuy && params.rate > 0 ? params.rate : current.pureGoldStock.avgSellRate,
+            todayBuyWeight: isBuy
+              ? Math.round((current.pureGoldStock.todayBuyWeight + params.fineWeight) * 1000) / 1000
+              : current.pureGoldStock.todayBuyWeight,
+            todaySellWeight: !isBuy
+              ? Math.round((current.pureGoldStock.todaySellWeight + params.fineWeight) * 1000) / 1000
+              : current.pureGoldStock.todaySellWeight,
+          }
+        : current.pureGoldStock,
+      silverStock: !isGold
+        ? {
+            ...current.silverStock,
+            weightGm: Math.max(0, Math.round((current.silverStock.weightGm + weightDelta) * 1000) / 1000),
+            avgRate: isBuy && params.rate > 0 ? params.rate : current.silverStock.avgRate,
+            avgSellRate: !isBuy && params.rate > 0 ? params.rate : (current.silverStock.avgSellRate || current.silverStock.avgRate),
+            todayBuyWeight: isBuy
+              ? Math.round(((current.silverStock.todayBuyWeight || 0) + params.fineWeight) * 1000) / 1000
+              : (current.silverStock.todayBuyWeight || 0),
+            todaySellWeight: !isBuy
+              ? Math.round(((current.silverStock.todaySellWeight || 0) + params.fineWeight) * 1000) / 1000
+              : (current.silverStock.todaySellWeight || 0),
+          }
+        : current.silverStock,
+      marketRates: {
+        ...current.marketRates,
+        gold24K: isGold && params.rate > 0 ? params.rate : current.marketRates.gold24K,
+        silver1Kg: !isGold && params.rate > 0 ? params.rate : current.marketRates.silver1Kg,
+      },
+    };
+
+    updated.totalBusinessWorth = calculateBusinessWorth(updated);
+    setItem(STORAGE_KEY, updated);
+    return updated;
+  },
+
   async resetStock(): Promise<BusinessStockSummary> {
     setItem(STORAGE_KEY, DEFAULT_INITIAL_STOCK);
     return DEFAULT_INITIAL_STOCK;

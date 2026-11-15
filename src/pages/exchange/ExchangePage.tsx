@@ -4,6 +4,7 @@ import { exchangeService } from '../../services/exchangeService';
 import { customerService } from '../../services/customerService';
 import { useUIStore } from '../../store/useUIStore';
 import { useMetalStore } from '../../store/useMetalStore';
+import { useStockStore } from '../../store/useStockStore';
 import {
   calculateFineGold,
   calculateAfterFine,
@@ -39,6 +40,7 @@ export const ExchangePage: React.FC = () => {
   const { showToast } = useUIStore();
   const { metalMode } = useMetalStore();
   const isSilver = metalMode === 'SILVER';
+  const { summary, fetchStock, updateMetalRates, recordTransactionImpact } = useStockStore();
 
   const [activeTab, setActiveTab] = useState<'POS' | 'LIST'>('POS');
   const [txnType, setTxnType] = useState<'BUY' | 'SELL'>('BUY');
@@ -140,6 +142,7 @@ export const ExchangePage: React.FC = () => {
 
   // Load Seed / Storage on Mount
   useEffect(() => {
+    fetchStock();
     loadTransactions();
     customerService.getAll().then((list) => {
       // Find customer #100 XYZ by default
@@ -148,31 +151,35 @@ export const ExchangePage: React.FC = () => {
         setSelectedCustomer(defaultCust);
       }
     });
-  }, []);
+  }, [fetchStock]);
 
   const loadTransactions = async () => {
     const list = await exchangeService.getAll();
     setTransactions(list);
   };
 
-  // Sync Metal Mode Defaults
+  // Sync Metal Mode & Live Stock Rates
   useEffect(() => {
     if (isSilver) {
-      setRate(95000);
-      setSaleRate(98000);
-      setPurchaseRate(95000);
-      setBhavcutRate(95000);
+      const sBuy = summary.silverStock?.avgRate || 95000;
+      const sSell = summary.silverStock?.avgSellRate || 98000;
+      setRate(sBuy);
+      setSaleRate(sSell);
+      setPurchaseRate(sBuy);
+      setBhavcutRate(sBuy);
       setSample('Chandi Sil');
       setTouch(99.99);
     } else {
-      setRate(80000);
-      setSaleRate(144500);
-      setPurchaseRate(140000);
-      setBhavcutRate(80000);
+      const gBuy = summary.pureGoldStock?.avgBuyRate || 140000;
+      const gSell = summary.pureGoldStock?.avgSellRate || 144500;
+      setRate(gBuy);
+      setSaleRate(gSell);
+      setPurchaseRate(gBuy);
+      setBhavcutRate(gBuy);
       setSample('lagdi');
       setTouch(91.6);
     }
-  }, [isSilver]);
+  }, [isSilver, summary.pureGoldStock?.avgBuyRate, summary.pureGoldStock?.avgSellRate, summary.silverStock?.avgRate, summary.silverStock?.avgSellRate]);
 
   // Sync Customer Balances to Udhari Section on Customer Selection
   useEffect(() => {
@@ -332,7 +339,19 @@ export const ExchangePage: React.FC = () => {
       narration,
     });
 
-    showToast(`Exchange #${newTxn.transactionNo} saved successfully!`, 'success');
+    // Synchronize current purchase & sell rates to stock section
+    await updateMetalRates(metalMode, purchaseRate, saleRate);
+
+    // Record stock inventory impact
+    await recordTransactionImpact({
+      metal: metalMode,
+      type: txnType,
+      fineWeight: settledGold || diffGold || fineGold || 0,
+      rate: rate || (txnType === 'BUY' ? purchaseRate : saleRate),
+      cashAmount: finalCash || 0,
+    });
+
+    showToast(`Exchange #${newTxn.transactionNo} saved & Stock updated! (स्टॉक अपडेट हो गया)`, 'success');
     loadTransactions();
 
     if (openSlip) {
@@ -1041,11 +1060,19 @@ export const ExchangePage: React.FC = () => {
                     <input
                       type="number"
                       value={saleRate}
-                      onChange={(e) => setSaleRate(Number(e.target.value))}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setSaleRate(val);
+                        updateMetalRates(metalMode, purchaseRate, val);
+                      }}
+                      onBlur={() => {
+                        updateMetalRates(metalMode, purchaseRate, saleRate);
+                        showToast(`Sale rate ₹${saleRate.toLocaleString('en-IN')} updated in Stock!`, 'info');
+                      }}
                       className="w-full pl-3 pr-14 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:outline-none text-xs"
                     />
                     <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
-                      ₹/10gm
+                      {isSilver ? '₹/1kg' : '₹/10gm'}
                     </span>
                   </div>
                 </div>
@@ -1058,11 +1085,19 @@ export const ExchangePage: React.FC = () => {
                     <input
                       type="number"
                       value={purchaseRate}
-                      onChange={(e) => setPurchaseRate(Number(e.target.value))}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setPurchaseRate(val);
+                        updateMetalRates(metalMode, val, saleRate);
+                      }}
+                      onBlur={() => {
+                        updateMetalRates(metalMode, purchaseRate, saleRate);
+                        showToast(`Purchase rate ₹${purchaseRate.toLocaleString('en-IN')} updated in Stock!`, 'info');
+                      }}
                       className="w-full pl-3 pr-14 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:outline-none text-xs"
                     />
                     <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
-                      ₹/10gm
+                      {isSilver ? '₹/1kg' : '₹/10gm'}
                     </span>
                   </div>
                 </div>
@@ -1073,9 +1108,12 @@ export const ExchangePage: React.FC = () => {
                 <div className="flex items-center space-x-1.5">
                   <button
                     type="button"
-                    onClick={() => handleSave(false)}
+                    onClick={async () => {
+                      await updateMetalRates(metalMode, purchaseRate, saleRate);
+                      await handleSave(false);
+                    }}
                     className="h-7 w-7 rounded-full bg-[#822c22] text-white flex items-center justify-center hover:bg-[#6c231a] transition-colors cursor-pointer shadow-xs"
-                    title="Save Transaction"
+                    title="Save Transaction & Update Stock Rates"
                   >
                     <Save className="h-3.5 w-3.5" />
                   </button>

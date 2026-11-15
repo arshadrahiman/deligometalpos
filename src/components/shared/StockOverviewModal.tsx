@@ -11,14 +11,20 @@ import {
   IndianRupee,
   Building,
   Edit3,
+  Check,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 export const StockOverviewModal: React.FC = () => {
-  const { isStockModalOpen, closeStockModal } = useUIStore();
+  const { isStockModalOpen, closeStockModal, showToast } = useUIStore();
   const { metalMode } = useMetalStore();
-  const { summary, fetchStock } = useStockStore();
+  const { summary, fetchStock, updateMetalRates } = useStockStore();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditingRates, setIsEditingRates] = useState(false);
+  const [editBuyRate, setEditBuyRate] = useState(0);
+  const [editSellRate, setEditSellRate] = useState(0);
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [fromDate, setFromDate] = useState(() => new Date().toISOString().substring(0, 10));
   const [toDate, setToDate] = useState(() => new Date().toISOString().substring(0, 10));
@@ -49,6 +55,18 @@ export const StockOverviewModal: React.FC = () => {
   const avgSellRateSilver = summary.silverStock?.avgSellRate || summary.silverStock?.avgRate || 0;
   const todayBuyFineSilver = summary.silverStock?.todayBuyWeight || 0;
   const todaySellFineSilver = summary.silverStock?.todaySellWeight || 0;
+
+  const startEditRates = () => {
+    setEditBuyRate(isGold ? avgBuyRateGold : avgBuyRateSilver);
+    setEditSellRate(isGold ? avgSellRateGold : avgSellRateSilver);
+    setIsEditingRates(true);
+  };
+
+  const handleSaveRates = async () => {
+    await updateMetalRates(metalMode, editBuyRate, editSellRate);
+    setIsEditingRates(false);
+    showToast(`Stock rates updated: Purchase ₹${editBuyRate.toLocaleString('en-IN')}, Sale ₹${editSellRate.toLocaleString('en-IN')}`, 'success');
+  };
 
   const totalKacha = summary.rawScrapStock?.kachaGrossWeight || 0;
   const totalFineInKacha = summary.rawScrapStock?.kachaFineEquivalent || 0;
@@ -182,28 +200,88 @@ export const StockOverviewModal: React.FC = () => {
             <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs overflow-hidden">
               <div className="bg-brand-maroon text-white font-bold px-3 py-1.5 text-xs flex items-center justify-between">
                 <span>FINE STOCK DETAILS ({metalMode})</span>
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="hover:opacity-80 p-0.5 rounded"
-                  title="Edit Stock"
-                >
-                  <Edit3 className="h-3.5 w-3.5 text-amber-300" />
-                </button>
+                <div className="flex items-center space-x-1.5">
+                  {!isEditingRates ? (
+                    <button
+                      type="button"
+                      onClick={startEditRates}
+                      className="px-2 py-0.5 rounded bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 text-[10px] font-bold flex items-center space-x-1"
+                      title="Quick Edit Purchase & Sell Rates"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                      <span>Edit Rates</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSaveRates}
+                      className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold flex items-center space-x-1"
+                    >
+                      <Check className="h-3 w-3" />
+                      <span>Save</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="hover:opacity-80 p-0.5 rounded"
+                    title="Full Calibration"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-amber-300" />
+                  </button>
+                </div>
               </div>
               <div className="p-3 space-y-2">
                 <div className="grid grid-cols-2 gap-2 pb-2 border-b dark:border-slate-700">
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-semibold">AVG BUY RATE</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
-                      {isGold ? `${avgBuyRateGold.toLocaleString('en-IN')} ₹` : `${avgBuyRateSilver.toLocaleString('en-IN')} ₹`}
+                    <span className="text-[10px] text-slate-400 block font-semibold">
+                      AVG BUY RATE (PURCHASE RATE / खरीदना)
                     </span>
+                    {isEditingRates ? (
+                      <div className="mt-1">
+                        <input
+                          type="number"
+                          value={editBuyRate}
+                          onChange={(e) => setEditBuyRate(Number(e.target.value))}
+                          className="w-full px-2 py-1 rounded border border-amber-400 dark:border-amber-500 bg-white dark:bg-slate-700 font-mono font-bold text-xs"
+                          placeholder="Purchase Rate"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        onClick={startEditRates}
+                        className="font-bold text-slate-800 dark:text-slate-200 font-mono cursor-pointer hover:text-brand-maroon flex items-center space-x-1"
+                        title="Click to edit Purchase Rate"
+                      >
+                        <span>{isGold ? `${avgBuyRateGold.toLocaleString('en-IN')} ₹` : `${avgBuyRateSilver.toLocaleString('en-IN')} ₹`}</span>
+                        <Edit3 className="h-2.5 w-2.5 text-slate-400 opacity-60" />
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-semibold">AVG SELL RATE</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
-                      {isGold ? `${avgSellRateGold.toLocaleString('en-IN')} ₹` : `${avgSellRateSilver.toLocaleString('en-IN')} ₹`}
+                    <span className="text-[10px] text-slate-400 block font-semibold">
+                      AVG SELL RATE (SALE RATE / बेचना)
                     </span>
+                    {isEditingRates ? (
+                      <div className="mt-1">
+                        <input
+                          type="number"
+                          value={editSellRate}
+                          onChange={(e) => setEditSellRate(Number(e.target.value))}
+                          className="w-full px-2 py-1 rounded border border-amber-400 dark:border-amber-500 bg-white dark:bg-slate-700 font-mono font-bold text-xs"
+                          placeholder="Sale Rate"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        onClick={startEditRates}
+                        className="font-bold text-slate-800 dark:text-slate-200 font-mono cursor-pointer hover:text-brand-maroon flex items-center space-x-1"
+                        title="Click to edit Sell Rate"
+                      >
+                        <span>{isGold ? `${avgSellRateGold.toLocaleString('en-IN')} ₹` : `${avgSellRateSilver.toLocaleString('en-IN')} ₹`}</span>
+                        <Edit3 className="h-2.5 w-2.5 text-slate-400 opacity-60" />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

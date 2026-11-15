@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 
 export const BuySellPage: React.FC = () => {
-  const { summary } = useStockStore();
+  const { summary, fetchStock, updateMetalRates, recordTransactionImpact } = useStockStore();
   const { showToast, openBhavcutModal } = useUIStore();
   const { metalMode } = useMetalStore();
   const isSilver = metalMode === 'SILVER';
@@ -49,16 +49,21 @@ export const BuySellPage: React.FC = () => {
   const [discount, setDiscount] = useState<number>(0.0);
 
   useEffect(() => {
+    fetchStock();
     if (isSilver) {
-      setRate(98000);
-      setSaleRate(98000);
-      setPurchaseRate(95000);
+      const sBuy = summary.silverStock?.avgRate || 95000;
+      const sSell = summary.silverStock?.avgSellRate || 98000;
+      setSaleRate(sSell);
+      setPurchaseRate(sBuy);
+      setRate(txnType === 'BUY' ? sBuy : sSell);
     } else {
-      setRate(144500);
-      setSaleRate(144500);
-      setPurchaseRate(140000);
+      const gBuy = summary.pureGoldStock?.avgBuyRate || 140000;
+      const gSell = summary.pureGoldStock?.avgSellRate || 144500;
+      setSaleRate(gSell);
+      setPurchaseRate(gBuy);
+      setRate(txnType === 'BUY' ? gBuy : gSell);
     }
-  }, [isSilver]);
+  }, [isSilver, txnType, summary.pureGoldStock?.avgBuyRate, summary.pureGoldStock?.avgSellRate, summary.silverStock?.avgRate, summary.silverStock?.avgSellRate, fetchStock]);
 
   // Settlement splits
   const [cashRecv, setCashRecv] = useState<number>(0);
@@ -144,7 +149,17 @@ export const BuySellPage: React.FC = () => {
       remarks,
     });
 
-    showToast(`Bullion ${txnType} transaction #${newTxn.transactionNo} created!`);
+    // Synchronize rates and inventory impact to stock section
+    await updateMetalRates(metalMode, purchaseRate, saleRate);
+    await recordTransactionImpact({
+      metal: metalMode,
+      type: txnType,
+      fineWeight: weight,
+      rate,
+      cashAmount: netCash,
+    });
+
+    showToast(`Bullion ${txnType} #${newTxn.transactionNo} saved & Stock updated! (स्टॉक अपडेट हो गया)`);
     loadTransactions();
   };
 

@@ -436,7 +436,7 @@ export const EditStockModal: React.FC<EditStockModalProps> = ({ isOpen, onClose 
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Avg Buy Rate (₹/10g)
+                  Purchase Rate / Avg Buy (खरीदना भाव ₹/10g)
                 </label>
                 <input
                   type="number"
@@ -449,7 +449,7 @@ export const EditStockModal: React.FC<EditStockModalProps> = ({ isOpen, onClose 
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Avg Sell Rate (₹/10g)
+                  Sale Rate / Avg Sell (बेचना भाव ₹/10g)
                 </label>
                 <input
                   type="number"
@@ -511,7 +511,7 @@ export const EditStockModal: React.FC<EditStockModalProps> = ({ isOpen, onClose 
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Avg Buy Rate (₹/1kg)
+                  Purchase Rate / Avg Buy (खरीदना भाव ₹/1kg)
                 </label>
                 <input
                   type="number"
@@ -524,7 +524,7 @@ export const EditStockModal: React.FC<EditStockModalProps> = ({ isOpen, onClose 
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Avg Sell Rate (₹/1kg)
+                  Sale Rate / Avg Sell (बेचना भाव ₹/1kg)
                 </label>
                 <input
                   type="number"
