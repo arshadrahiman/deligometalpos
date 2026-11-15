@@ -1,5 +1,11 @@
 import React from 'react';
-import { useThemeStore, THEME_PRESETS, ThemePreset, ThemeColors } from '../../store/useThemeStore';
+import {
+  useThemeStore,
+  THEME_PRESETS,
+  ThemePreset,
+  ThemeColors,
+  ColorMode,
+} from '../../store/useThemeStore';
 import { useUIStore } from '../../store/useUIStore';
 import {
   Palette,
@@ -10,6 +16,9 @@ import {
   Layers,
   Eye,
   Sliders,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 
 interface ThemeConfigSectionProps {
@@ -17,8 +26,28 @@ interface ThemeConfigSectionProps {
 }
 
 export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }) => {
-  const { preset, colors, setPreset, setColor, resetTheme, saveTheme } = useThemeStore();
+  const {
+    preset,
+    colors,
+    colorMode,
+    resolvedMode,
+    setPreset,
+    setColor,
+    setColorMode,
+    resetTheme,
+    saveTheme,
+  } = useThemeStore();
   const { showToast } = useUIStore();
+
+  const handleModeSelect = (mode: ColorMode) => {
+    setColorMode(mode);
+    const modeLabels: Record<ColorMode, string> = {
+      light: 'Light Mode (लाइट मोड)',
+      dark: 'Dark Mode (डार्क मोड)',
+      system: 'System Settings Mode (सिस्टम मोड)',
+    };
+    showToast(`Switched to ${modeLabels[mode]}!`, 'success');
+  };
 
   const handlePresetSelect = (key: ThemePreset) => {
     setPreset(key);
@@ -31,13 +60,13 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
 
   const handleSaveTheme = () => {
     saveTheme();
-    showToast('Theme colors saved and applied across the entire ERP!', 'success');
+    showToast('Theme preferences saved and applied across the entire ERP!', 'success');
     if (onSave) onSave();
   };
 
   const handleReset = () => {
     resetTheme();
-    showToast('Theme reset to Navy Blue & Yellow default', 'info');
+    showToast('Theme reset to default (System Mode with Navy Blue & Yellow)', 'info');
   };
 
   return (
@@ -53,7 +82,7 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
               THEME & COLOR CONFIGURATION (थीम एवं रंग)
             </h3>
             <p className="text-xs text-slate-500">
-              Switch color presets or customize exact primary Navy Blue and Yellow tones with live real-time sync
+              Switch between Light, Dark, or System mode, choose pre-tuned palettes or customize tones
             </p>
           </div>
         </div>
@@ -62,7 +91,7 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center space-x-1.5 px-3 py-1.5 border border-slate-300 text-slate-700 hover:bg-white text-xs font-semibold rounded-lg transition-colors"
+            className="flex items-center space-x-1.5 px-3 py-1.5 border border-slate-300 text-slate-700 hover:bg-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Reset to Default</span>
@@ -70,7 +99,7 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
           <button
             type="button"
             onClick={handleSaveTheme}
-            className="flex items-center space-x-1.5 px-4 py-1.5 bg-brand-primary text-brand-secondary text-xs font-bold rounded-lg hover:bg-brand-primary-dark transition-colors shadow-xs"
+            className="flex items-center space-x-1.5 px-4 py-1.5 bg-brand-primary text-brand-secondary text-xs font-bold rounded-lg hover:bg-brand-primary-dark transition-colors shadow-xs cursor-pointer"
           >
             <Save className="h-3.5 w-3.5" />
             <span>Save Theme</span>
@@ -78,7 +107,134 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
         </div>
       </div>
 
-      {/* 2. Theme Presets Grid */}
+      {/* 2. Color Mode (Light Mode, Dark Mode, System Settings Mode) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Sun className="h-4 w-4 text-brand-primary" />
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+              Appearance Mode (थीम मोड: डार्क / लाइट / सिस्टम)
+            </h4>
+          </div>
+          <span className="text-[11px] font-semibold text-slate-500">
+            Active: <span className="font-bold text-brand-primary capitalize">{colorMode} Mode</span>
+            {colorMode === 'system' && (
+              <span className="ml-1 text-slate-400">
+                ({resolvedMode === 'dark' ? 'Resolved Dark' : 'Resolved Light'})
+              </span>
+            )}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Light Mode Card */}
+          <button
+            type="button"
+            onClick={() => handleModeSelect('light')}
+            className={`p-3.5 rounded-xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+              colorMode === 'light'
+                ? 'border-brand-primary bg-white shadow-md ring-2 ring-brand-primary/20'
+                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
+            }`}
+          >
+            {colorMode === 'light' && (
+              <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-brand-primary text-brand-secondary flex items-center justify-center text-xs shadow-xs">
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+            )}
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="h-9 w-9 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0">
+                  <Sun className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="font-bold text-xs text-slate-900 block">Light Mode (लाइट मोड)</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Daytime standard</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                Crisp white cards, soft surface backgrounds, and bullion gold accents for clear daylight visibility.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+              <span>Background: #f0f4f9</span>
+              <span className="font-bold text-amber-700">Light Surface</span>
+            </div>
+          </button>
+
+          {/* Dark Mode Card */}
+          <button
+            type="button"
+            onClick={() => handleModeSelect('dark')}
+            className={`p-3.5 rounded-xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+              colorMode === 'dark'
+                ? 'border-brand-primary bg-white shadow-md ring-2 ring-brand-primary/20'
+                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
+            }`}
+          >
+            {colorMode === 'dark' && (
+              <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-brand-primary text-brand-secondary flex items-center justify-center text-xs shadow-xs">
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+            )}
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="h-9 w-9 rounded-lg bg-slate-900 text-amber-300 border border-slate-700 flex items-center justify-center shrink-0">
+                  <Moon className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="font-bold text-xs text-slate-900 block">Dark Mode (डार्क मोड)</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Nighttime & low glare</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                Deep navy & slate dark palette with luminous yellow highlights, reducing eye fatigue during evening trade.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+              <span>Background: #0a0f1d</span>
+              <span className="font-bold text-indigo-400">Dark Surface</span>
+            </div>
+          </button>
+
+          {/* System Settings Mode Card */}
+          <button
+            type="button"
+            onClick={() => handleModeSelect('system')}
+            className={`p-3.5 rounded-xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+              colorMode === 'system'
+                ? 'border-brand-primary bg-white shadow-md ring-2 ring-brand-primary/20'
+                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
+            }`}
+          >
+            {colorMode === 'system' && (
+              <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-brand-primary text-brand-secondary flex items-center justify-center text-xs shadow-xs">
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+            )}
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="h-9 w-9 rounded-lg bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center shrink-0">
+                  <Monitor className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="font-bold text-xs text-slate-900 block">System Settings (सिस्टम मोड)</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Automatic device sync</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                Seamlessly follows your device's operating system (macOS, Windows, iOS, Android) appearance settings.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+              <span>Sync: OS Appearance</span>
+              <span className="font-bold text-sky-600">Auto Mode</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Theme Presets Grid */}
       <div className="space-y-3">
         <div className="flex items-center space-x-2">
           <Layers className="h-4 w-4 text-brand-primary" />
@@ -96,7 +252,7 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
                 key={key}
                 type="button"
                 onClick={() => handlePresetSelect(key)}
-                className={`p-3.5 rounded-xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+                className={`p-3.5 rounded-xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                   isSelected
                     ? 'border-brand-primary bg-white shadow-md ring-2 ring-brand-primary/20'
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
@@ -152,7 +308,7 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
         </div>
       </div>
 
-      {/* 3. Dynamic Custom Color Pickers */}
+      {/* 4. Dynamic Custom Color Pickers */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center space-x-2">
           <Sliders className="h-4 w-4 text-brand-primary" />
@@ -320,12 +476,12 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
                 className="w-full px-3 py-1.5 text-xs font-mono font-bold rounded-lg border border-slate-300 uppercase"
               />
             </div>
-            <span className="text-[10px] text-slate-400">Application background canvas</span>
+            <span className="text-[10px] text-slate-400">Application background canvas (Light Mode)</span>
           </div>
         </div>
       </div>
 
-      {/* 4. Live Interactive UI Component Preview */}
+      {/* 5. Live Interactive UI Component Preview */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
         <div className="flex items-center space-x-2">
           <Eye className="h-4 w-4 text-brand-primary" />
@@ -345,7 +501,10 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
                 <span className="text-xs font-extrabold text-white block leading-none">
                   Deligo Technologies ERP
                 </span>
-                <span className="text-[9px] text-slate-300">Live Navy Blue & Yellow Navigation</span>
+                <span className="text-[9px] text-slate-300">
+                  {colorMode === 'dark' ? 'Dark Mode' : colorMode === 'light' ? 'Light Mode' : 'System Mode'}{' '}
+                  • Navy Blue & Yellow Navigation
+                </span>
               </div>
             </div>
 
@@ -366,7 +525,7 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
               <span className="text-[10px] font-bold text-slate-400 uppercase">Primary Button</span>
               <button
                 type="button"
-                className="w-full py-2 px-3 bg-brand-primary text-brand-secondary font-bold rounded-lg hover:bg-brand-primary-dark transition-colors shadow-xs flex items-center justify-center space-x-1.5"
+                className="w-full py-2 px-3 bg-brand-primary text-brand-secondary font-bold rounded-lg hover:bg-brand-primary-dark transition-colors shadow-xs flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 <Save className="h-3.5 w-3.5" />
                 <span>Save Transaction</span>
@@ -378,7 +537,7 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
               <span className="text-[10px] font-bold text-slate-400 uppercase">Accent Yellow Button</span>
               <button
                 type="button"
-                className="w-full py-2 px-3 bg-brand-secondary text-slate-900 font-extrabold rounded-lg hover:bg-brand-secondary-dark transition-colors shadow-xs flex items-center justify-center space-x-1.5"
+                className="w-full py-2 px-3 bg-brand-secondary text-slate-900 font-extrabold rounded-lg hover:bg-brand-secondary-dark transition-colors shadow-xs flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>Bhavcut Conversion</span>
@@ -406,4 +565,3 @@ export const ThemeConfigSection: React.FC<ThemeConfigSectionProps> = ({ onSave }
     </div>
   );
 };
-

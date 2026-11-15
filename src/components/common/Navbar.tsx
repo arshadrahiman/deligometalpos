@@ -8,17 +8,22 @@ import {
   Sparkles,
   MoreVertical,
   Calculator,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useMetalStore } from '../../store/useMetalStore';
+import { useThemeStore } from '../../store/useThemeStore';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user, logout } = useAuthStore();
-  const { openStockModal, openBhavcutModal } = useUIStore();
+  const { openStockModal, openBhavcutModal, showToast } = useUIStore();
   const { metalMode, toggleMetalMode } = useMetalStore();
+  const { colorMode, cycleColorMode } = useThemeStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -115,6 +120,30 @@ export const Navbar: React.FC = () => {
                 ))}
                 <div className="border-t my-1 border-slate-200" />
                 <button
+                  onClick={() => {
+                    const next = cycleColorMode();
+                    const labels = {
+                      light: 'Light Mode',
+                      dark: 'Dark Mode',
+                      system: 'System Mode',
+                    };
+                    showToast(`Appearance: ${labels[next]}`, 'info');
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                >
+                  <span className="flex items-center space-x-1.5">
+                    {colorMode === 'dark' ? (
+                      <Moon className="h-3.5 w-3.5 text-amber-500" />
+                    ) : colorMode === 'light' ? (
+                      <Sun className="h-3.5 w-3.5 text-amber-500" />
+                    ) : (
+                      <Monitor className="h-3.5 w-3.5 text-sky-500" />
+                    )}
+                    <span>Theme Appearance</span>
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400">{colorMode}</span>
+                </button>
+                <button
                   onClick={openBhavcutModal}
                   className="w-full text-left px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 flex items-center space-x-1.5"
                 >
@@ -131,6 +160,30 @@ export const Navbar: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Quick Theme Mode Toggle (Light / Dark / System) */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = cycleColorMode();
+              const labels = {
+                light: 'Light Mode (लाइट मोड)',
+                dark: 'Dark Mode (डार्क मोड)',
+                system: 'System Mode (सिस्टम मोड)',
+              };
+              showToast(`Appearance: ${labels[next]}`, 'info');
+            }}
+            className="p-1.5 rounded-lg text-slate-300 hover:text-amber-300 hover:bg-white/10 transition-colors cursor-pointer"
+            title={`Appearance: ${colorMode.toUpperCase()} mode (Click to cycle Light → Dark → System)`}
+          >
+            {colorMode === 'dark' ? (
+              <Moon className="h-4 w-4 text-amber-300 fill-amber-300/20" />
+            ) : colorMode === 'light' ? (
+              <Sun className="h-4 w-4 text-amber-400 fill-amber-400/20" />
+            ) : (
+              <Monitor className="h-4 w-4 text-sky-300" />
+            )}
+          </button>
 
           {/* Settings Yellow Gear Icon Matching Reference */}
           <Link
@@ -220,6 +273,33 @@ export const Navbar: React.FC = () => {
                 Stock
               </button>
             </div>
+          </div>
+
+          {/* Mobile Theme Mode Row */}
+          <div className="flex items-center justify-between py-2 border-b border-slate-700 text-xs">
+            <span className="font-bold text-slate-300">Theme Mode:</span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = cycleColorMode();
+                const labels = {
+                  light: 'Light Mode',
+                  dark: 'Dark Mode',
+                  system: 'System Mode',
+                };
+                showToast(`Appearance: ${labels[next]}`, 'info');
+              }}
+              className="px-2.5 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700 flex items-center space-x-1.5 font-bold text-xs cursor-pointer"
+            >
+              {colorMode === 'dark' ? (
+                <Moon className="h-3.5 w-3.5 text-amber-400" />
+              ) : colorMode === 'light' ? (
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
+              ) : (
+                <Monitor className="h-3.5 w-3.5 text-sky-400" />
+              )}
+              <span className="capitalize">{colorMode} Mode</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-2 gap-1.5">

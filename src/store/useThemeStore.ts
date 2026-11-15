@@ -19,6 +19,8 @@ export type ThemePreset =
   | 'classic_maroon'
   | 'custom';
 
+export type ColorMode = 'light' | 'dark' | 'system';
+
 export interface PresetInfo {
   name: string;
   description: string;
@@ -119,9 +121,33 @@ export function hexToRgb(hex: string): string {
   return `${r}, ${g}, ${b}`;
 }
 
-export function applyThemeToDOM(colors: ThemeColors) {
-  if (typeof document === 'undefined') return;
+export function resolveIsDark(mode: ColorMode): boolean {
+  if (mode === 'dark') return true;
+  if (mode === 'light') return false;
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  return false;
+}
+
+export function applyThemeToDOM(colors: ThemeColors, mode: ColorMode = 'system'): 'light' | 'dark' {
+  if (typeof document === 'undefined') return 'light';
   const root = document.documentElement;
+
+  const isDark = resolveIsDark(mode);
+  const resolved: 'light' | 'dark' = isDark ? 'dark' : 'light';
+
+  if (isDark) {
+    root.classList.add('dark');
+    root.classList.remove('light');
+    root.style.colorScheme = 'dark';
+    root.style.setProperty('--brand-surface', '#0a0f1d');
+  } else {
+    root.classList.remove('dark');
+    root.classList.add('light');
+    root.style.colorScheme = 'light';
+    root.style.setProperty('--brand-surface', colors.surface || '#f0f4f9');
+  }
 
   root.style.setProperty('--brand-primary', colors.primary);
   root.style.setProperty('--brand-primary-rgb', hexToRgb(colors.primary));
@@ -138,12 +164,18 @@ export function applyThemeToDOM(colors: ThemeColors) {
   root.style.setProperty('--brand-nav', colors.nav);
   root.style.setProperty('--brand-nav-rgb', hexToRgb(colors.nav));
 
-  root.style.setProperty('--brand-surface', colors.surface);
+  return resolved;
 }
+
+let mediaQueryListenerAttached = false;
 
 interface ThemeState {
   preset: ThemePreset;
   colors: ThemeColors;
+  colorMode: ColorMode;
+  resolvedMode: 'light' | 'dark';
+  setColorMode: (mode: ColorMode) => void;
+  cycleColorMode: () => ColorMode;
   setPreset: (preset: ThemePreset) => void;
   setColor: <K extends keyof ThemeColors>(key: K, value: string) => void;
   setColors: (colors: Partial<ThemeColors>) => void;
@@ -155,11 +187,14 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>((set, get) => ({
   preset: 'navy_yellow',
   colors: THEME_PRESETS.navy_yellow.colors,
+  colorMode: 'system',
+  resolvedMode: 'light',
 
   initTheme: () => {
     try {
       const settings = settingsService.getSettings();
       const preset = settings.theme_preset || 'navy_yellow';
+      const colorMode = (settings.color_mode || 'system') as ColorMode;
       const colors: ThemeColors = {
         primary: settings.primary_color || THEME_PRESETS[preset]?.colors.primary || '#0f2744',
         primaryDark: settings.primary_dark || THEME_PRESETS[preset]?.colors.primaryDark || '#0a192f',
@@ -169,17 +204,62 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
         nav: settings.nav_color || THEME_PRESETS[preset]?.colors.nav || '#0a192f',
         surface: settings.surface_color || THEME_PRESETS[preset]?.colors.surface || '#f0f4f9',
       };
-      set({ preset, colors });
-      applyThemeToDOM(colors);
+
+      const resolved = applyThemeToDOM(colors, colorMode);
+      set({ preset, colors, colorMode, resolvedMode: resolved });
+
+      // Setup system listener once
+      if (typeof window !== 'undefined' && window.matchMedia && !mediaQueryListenerAttached) {
+        mediaQueryListenerAttached = true;
+        const mql = window.matchMedia('(prefers-color-scheme: dark)');
+        const listener = () => {
+          const currentMode = get().colorMode;
+          if (currentMode === 'system') {
+            const nextResolved = applyThemeToDOM(get().colors, 'system');
+            set({ resolvedMode: nextResolved });
+          }
+        };
+        if (mql.addEventListener) {
+          mql.addEventListener('change', listener);
+        } else if ((mql as any).addListener) {
+          (mql as any).addListener(listener);
+        }
+      }
     } catch {
-      applyThemeToDOM(THEME_PRESETS.navy_yellow.colors);
+      const resolved = applyThemeToDOM(THEME_PRESETS.navy_yellow.colors, 'system');
+      set({ resolvedMode: resolved });
     }
+  },
+
+  setColorMode: (mode: ColorMode) => {
+    const { colors } = get();
+    const resolved = applyThemeToDOM(colors, mode);
+    set({ colorMode: mode, resolvedMode: resolved });
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('hs_color_mode', mode);
+      } catch {}
+    }
+
+    settingsService.updatePartial({
+      color_mode: mode,
+    });
+  },
+
+  cycleColorMode: () => {
+    const current = get().colorMode;
+    const nextMode: ColorMode =
+      current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light';
+    get().setColorMode(nextMode);
+    return nextMode;
   },
 
   setPreset: (preset: ThemePreset) => {
     const presetColors = THEME_PRESETS[preset].colors;
+    const { colorMode } = get();
     set({ preset, colors: { ...presetColors } });
-    applyThemeToDOM(presetColors);
+    applyThemeToDOM(presetColors, colorMode);
 
     // Persist to extra settings immediately
     settingsService.updatePartial({
@@ -195,12 +275,11 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   setColor: (key, value) => {
-    const current = get().colors;
+    const { colors: current, colorMode } = get();
     const updated = { ...current, [key]: value };
     set({ preset: 'custom', colors: updated });
-    applyThemeToDOM(updated);
+    applyThemeToDOM(updated, colorMode);
 
-    // Persist
     settingsService.updatePartial({
       theme_preset: 'custom',
       primary_color: updated.primary,
@@ -214,10 +293,10 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   setColors: (partialColors) => {
-    const current = get().colors;
+    const { colors: current, colorMode } = get();
     const updated = { ...current, ...partialColors };
     set({ preset: 'custom', colors: updated });
-    applyThemeToDOM(updated);
+    applyThemeToDOM(updated, colorMode);
 
     settingsService.updatePartial({
       theme_preset: 'custom',
@@ -232,8 +311,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   saveTheme: () => {
-    const { preset, colors } = get();
+    const { preset, colors, colorMode } = get();
     settingsService.updatePartial({
+      color_mode: colorMode,
       theme_preset: preset,
       primary_color: colors.primary,
       primary_dark: colors.primaryDark,
@@ -243,14 +323,23 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       nav_color: colors.nav,
       surface_color: colors.surface,
     });
-    applyThemeToDOM(colors);
+    applyThemeToDOM(colors, colorMode);
   },
 
   resetTheme: () => {
     const defaultColors = THEME_PRESETS.navy_yellow.colors;
-    set({ preset: 'navy_yellow', colors: defaultColors });
-    applyThemeToDOM(defaultColors);
+    set({ preset: 'navy_yellow', colors: defaultColors, colorMode: 'system' });
+    const resolved = applyThemeToDOM(defaultColors, 'system');
+    set({ resolvedMode: resolved });
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('hs_color_mode', 'system');
+      } catch {}
+    }
+
     settingsService.updatePartial({
+      color_mode: 'system',
       theme_preset: 'navy_yellow',
       primary_color: defaultColors.primary,
       primary_dark: defaultColors.primaryDark,
@@ -267,4 +356,3 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 if (typeof window !== 'undefined') {
   useThemeStore.getState().initTheme();
 }
-

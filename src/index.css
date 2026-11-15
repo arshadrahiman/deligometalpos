@@ -20,11 +20,121 @@
     --brand-nav-rgb: 10, 25, 47;
 
     --brand-surface: #f0f4f9;
+    color-scheme: light;
+  }
+
+  html.dark {
+    --brand-surface: #0a0f1d;
+    color-scheme: dark;
   }
 
   body {
-    @apply font-poppins text-slate-800 bg-brand-surface antialiased;
+    @apply font-poppins text-slate-800 bg-brand-surface antialiased transition-colors duration-150;
   }
+
+  html.dark body {
+    @apply text-slate-100 bg-[#0a0f1d];
+  }
+}
+
+/* =========================================================================
+   DARK MODE ADAPTIVE STYLES (Light Mode / Dark Mode / System Settings Mode)
+   Executive Bullion Navy Blue, Slate & Gold Palette
+   ========================================================================= */
+
+html.dark .bg-white {
+  background-color: #111a2e;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-100 {
+  background-color: #17233d;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #1e2c4c;
+}
+
+html.dark .border-slate-100 {
+  border-color: #1a253d;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+  border-color: #223254;
+}
+
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #223254;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #f1f5f9;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #94a3b8;
+}
+
+html.dark .text-slate-400 {
+  color: #64748b;
+}
+
+/* Form Controls & Inputs */
+html.dark input[type="text"],
+html.dark input[type="number"],
+html.dark input[type="password"],
+html.dark input[type="email"],
+html.dark input[type="date"],
+html.dark select,
+html.dark textarea {
+  background-color: #0d1527;
+  color: #f8fafc;
+  border-color: #2d3f66;
+}
+
+html.dark input[type="text"]:focus,
+html.dark input[type="number"]:focus,
+html.dark input[type="password"]:focus,
+html.dark input[type="email"]:focus,
+html.dark input[type="date"]:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: var(--brand-secondary, #ffd700);
+  outline: none;
+}
+
+/* Tables in Dark Mode */
+html.dark thead {
+  background-color: #17233d;
+}
+
+html.dark tbody tr:hover,
+html.dark tr.hover\:bg-slate-50:hover {
+  background-color: #17243e !important;
+}
+
+/* Preserves White Paper Surface for Thermal Receipt & Slip Printing */
+.select-all,
+.thermal-paper,
+.thermal-paper * {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+/* Shadows in Dark Mode */
+html.dark .shadow-xs,
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
 }
 
 /* Print Styles for 3-inch Thermal Slips & A4 Invoices */
@@ -47,4 +157,3 @@
     box-shadow: none !important;
   }
 }
-

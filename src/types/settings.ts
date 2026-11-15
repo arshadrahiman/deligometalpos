@@ -50,6 +50,7 @@ export interface ExtraSettings {
   en_pwd?: string;
 
   // 6. Dynamic Theme & Color Configuration (Navy Blue & Yellow)
+  color_mode: 'light' | 'dark' | 'system';
   theme_preset: 'navy_yellow' | 'royal_blue' | 'deep_ocean' | 'midnight' | 'classic_maroon' | 'custom';
   primary_color: string;
   primary_dark: string;
