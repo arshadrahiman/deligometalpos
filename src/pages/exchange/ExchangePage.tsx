@@ -60,7 +60,7 @@ export const ExchangePage: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   // Left Column Fields (ALL FULLY EDITABLE)
-  const [weight, setWeight] = useState<number>(100.0);
+  const [weight, setWeight] = useState<number>(0.0);
   const [lessWeight, setLessWeight] = useState<number>(0.0);
   const [touch, setTouch] = useState<number>(91.6);
   const [touchMinus, setTouchMinus] = useState<number>(0.0);
@@ -82,24 +82,24 @@ export const ExchangePage: React.FC = () => {
   ]);
 
   const [fineGoldInput, setFineGoldInput] = useState<number | null>(null);
-  const [extraGold, setExtraGold] = useState<number>(0.0);
-  const [settledGold, setSettledGold] = useState<number>(90.0);
+  const [extraGoldInput, setExtraGoldInput] = useState<number | null>(null);
+  const [settledGold, setSettledGold] = useState<number>(0.0);
   const [allowancePct, setAllowancePct] = useState<number>(0.2);
 
   const [diffGoldInput, setDiffGoldInput] = useState<number | null>(null);
   const [extraDiffGm, setExtraDiffGm] = useState<string>('');
 
-  const [rate, setRate] = useState<number>(isSilver ? 95000 : 80000);
+  const [rate, setRate] = useState<number>(isSilver ? 95000 : 140000);
   const [diffAmountInput, setDiffAmountInput] = useState<number | null>(null);
   const [discountPct, setDiscountPct] = useState<string>('');
 
-  const [charges, setCharges] = useState<number>(300.0);
+  const [charges, setCharges] = useState<number>(50.0);
   const [chargesGm, setChargesGm] = useState<string>('');
 
   const [finalCashInput, setFinalCashInput] = useState<number | null>(null);
 
   // Payment Breakdown Fields (Given vs Received)
-  const [givenCash, setGivenCash] = useState<number>(12500);
+  const [givenCash, setGivenCash] = useState<number>(0);
   const [onlineGivenRtgs, setOnlineGivenRtgs] = useState<number>(0);
   const [selfBank2GivenRtgs, setSelfBank2GivenRtgs] = useState<number>(0);
 
@@ -113,8 +113,8 @@ export const ExchangePage: React.FC = () => {
 
   // Right Column Udhari Section Fields (EXACT MATCH TO REFERENCE - ALL FULLY EDITABLE)
   const [oldGold, setOldGold] = useState<number>(0.0);
-  const [oldCash, setOldCash] = useState<number>(23530);
-  const [oldSilver, setOldSilver] = useState<number>(-413.043);
+  const [oldCash, setOldCash] = useState<number>(0);
+  const [oldSilver, setOldSilver] = useState<number>(0.0);
   const [oldSilverCash, setOldSilverCash] = useState<number>(0);
 
   const [kchJamaGold, setKchJamaGold] = useState<number>(0.0);
@@ -130,7 +130,7 @@ export const ExchangePage: React.FC = () => {
   const [udharCash, setUdharCash] = useState<number>(0);
 
   // Quick Bhavcut Rate & Narration
-  const [bhavcutRate, setBhavcutRate] = useState<number>(isSilver ? 95000 : 80000);
+  const [bhavcutRate, setBhavcutRate] = useState<number>(isSilver ? 95000 : 140000);
   const [narration, setNarration] = useState<string>('');
 
   // Quick Add Customer Form State
@@ -184,9 +184,9 @@ export const ExchangePage: React.FC = () => {
   // Sync Customer Balances to Udhari Section on Customer Selection
   useEffect(() => {
     if (selectedCustomer) {
-      setOldGold(selectedCustomer.balance.gold ?? 0.0);
-      setOldCash(selectedCustomer.balance.cash ?? 23530);
-      setOldSilver(selectedCustomer.balance.silver ?? -413.043);
+      setOldGold(selectedCustomer.balance?.gold ?? 0.0);
+      setOldCash(selectedCustomer.balance?.cash ?? 0);
+      setOldSilver(selectedCustomer.balance?.silver ?? 0.0);
       setOldSilverCash(0);
     }
   }, [selectedCustomer]);
@@ -198,16 +198,112 @@ export const ExchangePage: React.FC = () => {
 
   const autoFineGold = calculateFineGold(netWeight, totalTouch);
   const fineGold = fineGoldInput !== null ? fineGoldInput : autoFineGold;
+
+  const autoExtraGold =
+    allowancePct > 0 && fineGold > 0
+      ? Math.round(((fineGold * allowancePct) / 100) * 1000) / 1000
+      : 0.0;
+  const extraGold = extraGoldInput !== null ? extraGoldInput : autoExtraGold;
+  const setExtraGold = (val: number) => setExtraGoldInput(val);
+
   const afterFine = calculateAfterFine(fineGold, extraGold);
 
   const autoDiffGold = calculateDiffGold(afterFine, settledGold);
-  const diffGold = diffGoldInput !== null ? diffGoldInput : autoDiffGold;
+  const extraDiffVal = Number(extraDiffGm) || 0;
+  const diffGold = diffGoldInput !== null ? diffGoldInput : Math.round((autoDiffGold + extraDiffVal) * 1000) / 1000;
 
-  const autoDiffAmount = calculateDiffAmount(diffGold, rate);
+  // Diff Amount (supports ₹/10gm for Gold, ₹/kg for Silver, and discount %)
+  const rawDiffAmount = isSilver
+    ? Math.round(((diffGold * rate) / 1000) * 100) / 100
+    : Math.round(((diffGold * rate) / 10) * 100) / 100;
+  const discountVal = Number(discountPct) || 0;
+  const autoDiffAmount = discountVal > 0
+    ? Math.round(rawDiffAmount * (1 - discountVal / 100) * 100) / 100
+    : rawDiffAmount;
   const diffAmount = diffAmountInput !== null ? diffAmountInput : autoDiffAmount;
 
-  const autoFinalCash = calculateFinalCash(diffAmount, charges);
+  const autoFinalCash = Math.round((diffAmount - charges) * 100) / 100;
   const finalCash = finalCashInput !== null ? finalCashInput : autoFinalCash;
+
+  // Auto-balance Payment Breakdown (Given Cash vs Received Cash) based on Final Cash
+  useEffect(() => {
+    if (txnType === 'BUY') {
+      if (finalCash >= 0) {
+        const netGiven = Math.max(0, Math.round((finalCash - onlineGivenRtgs - selfBank2GivenRtgs) * 100) / 100);
+        setGivenCash(netGiven);
+        setRecievedCash(0);
+      } else {
+        const netRecv = Math.max(0, Math.round((Math.abs(finalCash) - onlineRecivRtgs - selfBank2RecivRtgs) * 100) / 100);
+        setRecievedCash(netRecv);
+        setGivenCash(0);
+      }
+    } else {
+      // SELL Mode
+      if (finalCash >= 0) {
+        const netRecv = Math.max(0, Math.round((finalCash - onlineRecivRtgs - selfBank2RecivRtgs) * 100) / 100);
+        setRecievedCash(netRecv);
+        setGivenCash(0);
+      } else {
+        const netGiven = Math.max(0, Math.round((Math.abs(finalCash) - onlineGivenRtgs - selfBank2GivenRtgs) * 100) / 100);
+        setGivenCash(netGiven);
+        setRecievedCash(0);
+      }
+    }
+  }, [finalCash, txnType, onlineGivenRtgs, selfBank2GivenRtgs, onlineRecivRtgs, selfBank2RecivRtgs]);
+
+  // Txn Type switch with rate alignment
+  const handleTxnTypeChange = (newType: 'BUY' | 'SELL') => {
+    setTxnType(newType);
+    const newRate = newType === 'BUY' ? purchaseRate : saleRate;
+    setRate(newRate);
+    setDiffAmountInput(null);
+    setFinalCashInput(null);
+  };
+
+  // Copy After Fine into Given Gold (↓ Button)
+  const handleCopyAfterFineToGivenGold = () => {
+    setSettledGold(afterFine);
+    setDiffGoldInput(null);
+    setDiffAmountInput(null);
+    setFinalCashInput(null);
+    showToast(`Given Gold auto-filled with After Fine (${afterFine.toFixed(3)} gm)`, 'success');
+  };
+
+  // Allowance % change -> updates extraGold
+  const handleAllowancePctChange = (pct: number) => {
+    setAllowancePct(pct);
+    setExtraGoldInput(null);
+    setDiffGoldInput(null);
+    setDiffAmountInput(null);
+    setFinalCashInput(null);
+  };
+
+  // Charges in gm change -> auto-calculates charges in ₹
+  const handleChargesGmChange = (valStr: string) => {
+    setChargesGm(valStr);
+    const gVal = Number(valStr);
+    if (gVal > 0 && rate > 0) {
+      const calcCash = isSilver
+        ? Math.round(((gVal * rate) / 1000) * 100) / 100
+        : Math.round(((gVal * rate) / 10) * 100) / 100;
+      setCharges(calcCash);
+    }
+    setFinalCashInput(null);
+  };
+
+  // Charges in ₹ change -> auto-updates chargesGm
+  const handleChargesChange = (val: number) => {
+    setCharges(val);
+    if (val > 0 && rate > 0) {
+      const gVal = isSilver
+        ? Math.round(((val * 1000) / rate) * 1000) / 1000
+        : Math.round(((val * 10) / rate) * 1000) / 1000;
+      setChargesGm(gVal.toFixed(3));
+    } else {
+      setChargesGm('');
+    }
+    setFinalCashInput(null);
+  };
 
   // Real-time Udhari Section Final Calculation (EXACT MATHEMATICAL ENGINE)
   const finalGold = Math.round((oldGold + kchJamaGold - kchUdharGold + jamaGold - udharGold) * 1000) / 1000;
@@ -217,12 +313,23 @@ export const ExchangePage: React.FC = () => {
   const handleFillKchJama = () => {
     const val = diffGold > 0 ? diffGold : fineGold > 0 ? fineGold : 0;
     setKchJamaGold(val);
+    if (finalCash > 0) {
+      const unpaid = Math.max(0, Math.round((finalCash - givenCash - onlineGivenRtgs - selfBank2GivenRtgs) * 100) / 100);
+      setKchJamaCash(unpaid > 0 ? unpaid : finalCash);
+    }
     showToast(`Kch se Jama(+) filled with ${val.toFixed(3)} gm`, 'success');
   };
 
   const handleFillKchUdhar = () => {
     const val = diffGold < 0 ? Math.abs(diffGold) : settledGold > 0 ? settledGold : 0;
     setKchUdharGold(val);
+    if (finalCash < 0) {
+      const unpaid = Math.max(0, Math.round((Math.abs(finalCash) - recievedCash - onlineRecivRtgs - selfBank2RecivRtgs) * 100) / 100);
+      setKchUdharCash(unpaid > 0 ? unpaid : Math.abs(finalCash));
+    } else if (txnType === 'SELL' && finalCash > 0) {
+      const unpaid = Math.max(0, Math.round((finalCash - recievedCash - onlineRecivRtgs - selfBank2RecivRtgs) * 100) / 100);
+      setKchUdharCash(unpaid > 0 ? unpaid : finalCash);
+    }
     showToast(`Kch se Udhar(-) filled with ${val.toFixed(3)} gm`, 'info');
   };
 
@@ -353,6 +460,27 @@ export const ExchangePage: React.FC = () => {
 
     showToast(`Exchange #${newTxn.transactionNo} saved & Stock updated! (स्टॉक अपडेट हो गया)`, 'success');
     loadTransactions();
+
+    // Reset form inputs for next transaction and sync customer balance
+    setWeight(0);
+    setLessWeight(0);
+    setSettledGold(0);
+    setExtraGoldInput(null);
+    setTotalTouchInput(null);
+    setDiffGoldInput(null);
+    setDiffAmountInput(null);
+    setFinalCashInput(null);
+    setKchJamaGold(0);
+    setKchJamaCash(0);
+    setKchUdharGold(0);
+    setKchUdharCash(0);
+    setJamaGold(0);
+    setJamaCash(0);
+    setUdharGold(0);
+    setUdharCash(0);
+    setNarration('');
+    setOldGold(finalGold);
+    setOldCash(finalCashTotal);
 
     if (openSlip) {
       setSelectedReceipt(newTxn);
@@ -512,7 +640,7 @@ export const ExchangePage: React.FC = () => {
             <div className="flex items-center justify-center space-x-3 pt-1">
               <button
                 type="button"
-                onClick={() => setTxnType('BUY')}
+                onClick={() => handleTxnTypeChange('BUY')}
                 className={`px-8 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
                   txnType === 'BUY'
                     ? 'border-2 border-red-800 text-red-800 bg-white shadow-xs'
@@ -523,7 +651,7 @@ export const ExchangePage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setTxnType('SELL')}
+                onClick={() => handleTxnTypeChange('SELL')}
                 className={`px-8 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
                   txnType === 'SELL'
                     ? 'border-2 border-red-800 text-red-800 bg-white shadow-xs'
@@ -567,10 +695,12 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="number"
                     step="0.001"
-                    value={weight}
+                    value={weight === 0 ? '' : weight}
+                    placeholder="0.000"
                     onChange={(e) => {
                       setWeight(Number(e.target.value));
                       setFineGoldInput(null);
+                      setExtraGoldInput(null);
                       setDiffGoldInput(null);
                       setDiffAmountInput(null);
                       setFinalCashInput(null);
@@ -585,15 +715,16 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="number"
                     step="0.001"
-                    value={lessWeight}
+                    value={lessWeight === 0 ? '' : lessWeight}
+                    placeholder="0.000"
                     onChange={(e) => {
                       setLessWeight(Number(e.target.value));
                       setFineGoldInput(null);
+                      setExtraGoldInput(null);
                       setDiffGoldInput(null);
                       setDiffAmountInput(null);
                       setFinalCashInput(null);
                     }}
-                    placeholder="0.000"
                     className="w-full pl-3 pr-8 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                   />
                   <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[11px] pointer-events-none">
@@ -613,10 +744,13 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="number"
                     step="0.01"
-                    value={touch}
+                    value={touch === 0 ? '' : touch}
+                    placeholder="00.00"
                     onChange={(e) => {
                       setTouch(Number(e.target.value));
+                      setTotalTouchInput(null);
                       setFineGoldInput(null);
+                      setExtraGoldInput(null);
                       setDiffGoldInput(null);
                       setDiffAmountInput(null);
                       setFinalCashInput(null);
@@ -634,7 +768,9 @@ export const ExchangePage: React.FC = () => {
                     value={touchMinus || ''}
                     onChange={(e) => {
                       setTouchMinus(Number(e.target.value));
+                      setTotalTouchInput(null);
                       setFineGoldInput(null);
+                      setExtraGoldInput(null);
                       setDiffGoldInput(null);
                       setDiffAmountInput(null);
                       setFinalCashInput(null);
@@ -647,10 +783,14 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="number"
                     step="0.01"
-                    value={totalTouch}
+                    value={totalTouch === 0 ? '' : totalTouch}
                     onChange={(e) => {
                       setTotalTouchInput(Number(e.target.value));
                       setFineGoldInput(null);
+                      setExtraGoldInput(null);
+                      setDiffGoldInput(null);
+                      setDiffAmountInput(null);
+                      setFinalCashInput(null);
                     }}
                     placeholder="Total %"
                     className="w-full pl-3 pr-6 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
@@ -670,7 +810,24 @@ export const ExchangePage: React.FC = () => {
               <div className="flex-1 flex items-center space-x-2">
                 <select
                   value={sample}
-                  onChange={(e) => setSample(e.target.value)}
+                  onChange={(e) => {
+                    const selected = e.target.value;
+                    setSample(selected);
+                    if (selected === '99.9' || selected === 'Silver Bar 999') {
+                      setTouch(99.9);
+                    } else if (selected === 'Chandi Sil' || selected === 'Chandi Katori') {
+                      setTouch(99.99);
+                    } else if (selected === 'lagdi' || selected === 'Rava' || selected === 'Zevar') {
+                      setTouch(91.6);
+                    }
+                    setTouchMinus(0);
+                    setTotalTouchInput(null);
+                    setFineGoldInput(null);
+                    setExtraGoldInput(null);
+                    setDiffGoldInput(null);
+                    setDiffAmountInput(null);
+                    setFinalCashInput(null);
+                  }}
                   className="flex-1 px-3 py-1 rounded-full border border-slate-400 font-bold text-slate-900 bg-white focus:outline-none text-xs cursor-pointer"
                 >
                   {samplesList.map((s) => (
@@ -702,7 +859,8 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="number"
                     step="0.001"
-                    value={fineGold}
+                    value={fineGold === 0 ? '' : fineGold}
+                    placeholder="0.000"
                     onChange={(e) => {
                       setFineGoldInput(Number(e.target.value));
                       setDiffGoldInput(null);
@@ -719,14 +877,14 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="number"
                     step="0.001"
-                    value={extraGold || ''}
+                    value={extraGold === 0 ? '' : extraGold}
+                    placeholder="0.000"
                     onChange={(e) => {
                       setExtraGold(Number(e.target.value));
                       setDiffGoldInput(null);
                       setDiffAmountInput(null);
                       setFinalCashInput(null);
                     }}
-                    placeholder="0.000"
                     className="w-full pl-3 pr-8 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                   />
                   <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[11px] pointer-events-none">
@@ -746,7 +904,8 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="number"
                     step="0.001"
-                    value={settledGold}
+                    value={settledGold === 0 ? '' : settledGold}
+                    placeholder="0.000"
                     onChange={(e) => {
                       setSettledGold(Number(e.target.value));
                       setDiffGoldInput(null);
@@ -760,16 +919,22 @@ export const ExchangePage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex-1 relative flex items-center">
+                  <button
+                    type="button"
+                    onClick={handleCopyAfterFineToGivenGold}
+                    className="absolute left-1 top-1 h-5 w-5 rounded-full bg-red-800 text-white flex items-center justify-center font-bold text-xs hover:bg-red-900 transition-colors shadow-xs cursor-pointer z-10"
+                    title="Copy After Fine to Given Gold (Settles Diff Gold to 0.000 gm)"
+                  >
+                    ↓
+                  </button>
                   <input
                     type="number"
                     step="0.01"
-                    value={allowancePct}
-                    onChange={(e) => setAllowancePct(Number(e.target.value))}
-                    className="w-full pl-6 pr-12 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
+                    value={allowancePct === 0 ? '' : allowancePct}
+                    placeholder="0.00"
+                    onChange={(e) => handleAllowancePctChange(Number(e.target.value))}
+                    className="w-full pl-7 pr-12 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                   />
-                  <span className="absolute left-2 top-1.5 text-red-700 font-bold text-xs pointer-events-none">
-                    ↓
-                  </span>
                   <span className="absolute right-2 top-1 font-bold text-slate-600 text-[11px] pointer-events-none">
                     +(%)
                   </span>
@@ -803,7 +968,12 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="text"
                     value={extraDiffGm}
-                    onChange={(e) => setExtraDiffGm(e.target.value)}
+                    onChange={(e) => {
+                      setExtraDiffGm(e.target.value);
+                      setDiffGoldInput(null);
+                      setDiffAmountInput(null);
+                      setFinalCashInput(null);
+                    }}
                     placeholder=""
                     className="w-full pl-3 pr-12 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                   />
@@ -821,7 +991,7 @@ export const ExchangePage: React.FC = () => {
               <span className="font-bold text-slate-700 whitespace-nowrap w-36 text-right">
                 RATE [P/S] :
               </span>
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <input
                   type="number"
                   value={rate}
@@ -830,8 +1000,11 @@ export const ExchangePage: React.FC = () => {
                     setDiffAmountInput(null);
                     setFinalCashInput(null);
                   }}
-                  className="w-full px-3 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
+                  className="w-full pl-3 pr-14 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                 />
+                <span className="absolute right-2.5 top-1 font-bold text-slate-600 text-[10px] pointer-events-none">
+                  {isSilver ? '₹/1kg' : '₹/10gm'}
+                </span>
               </div>
             </div>
 
@@ -860,7 +1033,11 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="text"
                     value={discountPct}
-                    onChange={(e) => setDiscountPct(e.target.value)}
+                    onChange={(e) => {
+                      setDiscountPct(e.target.value);
+                      setDiffAmountInput(null);
+                      setFinalCashInput(null);
+                    }}
                     placeholder=""
                     className="w-full pl-3 pr-10 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                   />
@@ -880,11 +1057,9 @@ export const ExchangePage: React.FC = () => {
                 <div className="flex-1 relative">
                   <input
                     type="number"
-                    value={charges}
-                    onChange={(e) => {
-                      setCharges(Number(e.target.value));
-                      setFinalCashInput(null);
-                    }}
+                    value={charges === 0 ? '' : charges}
+                    placeholder="0"
+                    onChange={(e) => handleChargesChange(Number(e.target.value))}
                     className="w-full pl-3 pr-6 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                   />
                   <span className="absolute right-2 top-1 font-bold text-slate-600 text-[11px] pointer-events-none">
@@ -895,7 +1070,7 @@ export const ExchangePage: React.FC = () => {
                   <input
                     type="text"
                     value={chargesGm}
-                    onChange={(e) => setChargesGm(e.target.value)}
+                    onChange={(e) => handleChargesGmChange(e.target.value)}
                     placeholder=""
                     className="w-full pl-3 pr-12 py-1 rounded-full border border-slate-400 font-bold text-slate-900 focus:border-amber-500 focus:outline-none text-xs"
                   />
@@ -1063,6 +1238,11 @@ export const ExchangePage: React.FC = () => {
                       onChange={(e) => {
                         const val = Number(e.target.value);
                         setSaleRate(val);
+                        if (txnType === 'SELL') {
+                          setRate(val);
+                          setDiffAmountInput(null);
+                          setFinalCashInput(null);
+                        }
                         updateMetalRates(metalMode, purchaseRate, val);
                       }}
                       onBlur={() => {
@@ -1088,6 +1268,11 @@ export const ExchangePage: React.FC = () => {
                       onChange={(e) => {
                         const val = Number(e.target.value);
                         setPurchaseRate(val);
+                        if (txnType === 'BUY') {
+                          setRate(val);
+                          setDiffAmountInput(null);
+                          setFinalCashInput(null);
+                        }
                         updateMetalRates(metalMode, val, saleRate);
                       }}
                       onBlur={() => {
