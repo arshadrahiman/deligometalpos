@@ -1,18 +1,12 @@
 import { LoanEntry } from '../types';
 import { getItem, setItem } from './storage';
-import { SEED_LOAN_ENTRIES } from './mockSeedData';
 import { customerService } from './customerService';
 
 const STORAGE_KEY = 'hs_loan_entries';
 
 export const loanService = {
   async getAll(): Promise<LoanEntry[]> {
-    let entries = getItem<LoanEntry[]>(STORAGE_KEY, []);
-    if (!entries || entries.length === 0) {
-      entries = SEED_LOAN_ENTRIES;
-      setItem(STORAGE_KEY, entries);
-    }
-    return entries;
+    return getItem<LoanEntry[]>(STORAGE_KEY, []);
   },
 
   async getByCustomerId(customerId: string): Promise<LoanEntry[]> {

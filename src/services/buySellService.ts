@@ -1,17 +1,11 @@
 import { BuySellTransaction } from '../types';
 import { getItem, setItem } from './storage';
-import { SEED_BUYSELL_TXNS } from './mockSeedData';
 
 const STORAGE_KEY = 'hs_buysell_txns';
 
 export const buySellService = {
   async getAll(): Promise<BuySellTransaction[]> {
-    let txns = getItem<BuySellTransaction[]>(STORAGE_KEY, []);
-    if (!txns || txns.length === 0) {
-      txns = SEED_BUYSELL_TXNS;
-      setItem(STORAGE_KEY, txns);
-    }
-    return txns;
+    return getItem<BuySellTransaction[]>(STORAGE_KEY, []);
   },
 
   async createTransaction(

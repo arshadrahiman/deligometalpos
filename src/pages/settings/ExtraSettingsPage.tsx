@@ -14,8 +14,16 @@ import {
   RotateCcw,
   CheckCircle2,
   Palette,
+  Database,
+  Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { ThemeConfigSection } from '../../components/settings/ThemeConfigSection';
+import {
+  resetAllDataToFresh,
+  loadSampleDemoData,
+  getDatabaseRecordCounts,
+} from '../../services/dataInit';
 
 export const ExtraSettingsPage: React.FC = () => {
   const { showToast } = useUIStore();
@@ -26,9 +34,34 @@ export const ExtraSettingsPage: React.FC = () => {
   );
 
   const [formData, setFormData] = useState<ExtraSettings>(() => settingsService.getSettings());
+  const [dbStats, setDbStats] = useState(() => getDatabaseRecordCounts());
 
   const handleChange = <K extends keyof ExtraSettings>(key: K, value: ExtraSettings[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleResetData = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to reset all account data? This will clear all customer accounts and transaction history, leaving you with a fresh clean production state.'
+      )
+    ) {
+      resetAllDataToFresh();
+      setDbStats(getDatabaseRecordCounts());
+      showToast('All account data has been reset to clean fresh state!', 'success');
+    }
+  };
+
+  const handleLoadDemoData = () => {
+    if (
+      window.confirm(
+        'Do you want to load sample demo records for testing purposes? This will add seed transactions and customers.'
+      )
+    ) {
+      loadSampleDemoData();
+      setDbStats(getDatabaseRecordCounts());
+      showToast('Sample demo data loaded successfully!', 'info');
+    }
   };
 
   const handleSave = () => {
@@ -565,6 +598,86 @@ export const ExtraSettingsPage: React.FC = () => {
                     placeholder="Enter 4-6 digit PIN"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300"
                   />
+                </div>
+              </div>
+
+              {/* Production Data Management & Reset Section */}
+              <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 rounded-lg bg-brand-maroon/10 text-brand-maroon flex items-center justify-center">
+                        <Database className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                          Production Storage & Account Data Management
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Fresh client storage active (LocalStorage). Ready for direct Server Database sync in future.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stored Counts Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-2xs">
+                      <span className="text-[10px] text-slate-400 block font-semibold">CUSTOMERS</span>
+                      <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+                        {dbStats.customerCount}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-2xs">
+                      <span className="text-[10px] text-slate-400 block font-semibold">EXCHANGES</span>
+                      <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+                        {dbStats.exchangeCount}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-2xs">
+                      <span className="text-[10px] text-slate-400 block font-semibold">BUY / SELL</span>
+                      <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+                        {dbStats.buySellCount}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-2xs">
+                      <span className="text-[10px] text-slate-400 block font-semibold">LOANS</span>
+                      <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+                        {dbStats.loanCount}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-2xs">
+                      <span className="text-[10px] text-slate-400 block font-semibold">EXPENSES</span>
+                      <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+                        {dbStats.expenseCount}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={handleResetData}
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors shadow-2xs"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                      <span>Reset All Data to Fresh Account (0 Records)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleLoadDemoData}
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors shadow-2xs"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                      <span>Load Sample Demo Data (Optional Testing)</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

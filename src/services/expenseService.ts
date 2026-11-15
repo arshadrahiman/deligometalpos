@@ -1,17 +1,11 @@
 import { ExpenseIncomeRecord } from '../types';
 import { getItem, setItem } from './storage';
-import { SEED_EXPENSES } from './mockSeedData';
 
 const STORAGE_KEY = 'hs_expenses';
 
 export const expenseService = {
   async getAll(): Promise<ExpenseIncomeRecord[]> {
-    let records = getItem<ExpenseIncomeRecord[]>(STORAGE_KEY, []);
-    if (!records || records.length === 0) {
-      records = SEED_EXPENSES;
-      setItem(STORAGE_KEY, records);
-    }
-    return records;
+    return getItem<ExpenseIncomeRecord[]>(STORAGE_KEY, []);
   },
 
   async create(

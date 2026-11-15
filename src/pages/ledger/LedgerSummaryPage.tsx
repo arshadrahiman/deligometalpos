@@ -40,97 +40,21 @@ export const LedgerSummaryPage: React.FC = () => {
     customerService.getAll().then(setCustomers);
   }, []);
 
-  // Pre-seed reference ledger items for exact parity with reference/ledger_summary_1440.png
-  const ledgerRows: LedgerRowItem[] = [
-    {
-      id: 'L-1',
-      sn: 1,
-      customerNo: 386,
-      name: 'RAHUL 1',
-      mobile: '',
-      dateTime: '11-11-2026\n03:54 PM',
-      goldBalance: 0.0,
-      silverBalance: 0.0,
-      cashBalance: 10000,
-    },
-    {
-      id: 'L-2',
-      sn: 2,
-      customerNo: 99,
-      name: 'Bank (Online)',
-      mobile: '',
-      dateTime: '11-11-2026\n01:01 PM',
-      goldBalance: 0.0,
-      silverBalance: 0.0,
-      cashBalance: -108283,
-    },
-    {
-      id: 'L-3',
-      sn: 3,
-      customerNo: 384,
-      name: 'cm',
-      mobile: '',
-      dateTime: '11-11-2026\n12:11 PM',
-      goldBalance: -2.0,
-      silverBalance: 0.0,
-      cashBalance: 0,
-    },
-    {
-      id: 'L-4',
-      sn: 4,
-      customerNo: 382,
-      name: 'am',
-      mobile: '',
-      dateTime: '11-11-2026\n11:52 AM',
-      goldBalance: -5.0,
-      silverBalance: 0.0,
-      cashBalance: 289000,
-    },
-    {
-      id: 'L-5',
-      sn: 5,
-      customerNo: 379,
-      name: 'ram rahim',
-      mobile: '',
-      dateTime: '10-11-2026\n03:24 PM',
-      goldBalance: 0.0,
-      silverBalance: 0.0,
-      cashBalance: -6525,
-    },
-    {
-      id: 'L-6',
-      sn: 6,
-      customerNo: 381,
-      name: 'sonu 1',
-      mobile: '',
-      dateTime: '10-11-2026\n11:02 AM',
-      goldBalance: 0.0,
-      silverBalance: 0.0,
-      cashBalance: 15454,
-    },
-    {
-      id: 'L-7',
-      sn: 7,
-      customerNo: 100,
-      name: 'XYZ',
-      mobile: '9645808999',
-      dateTime: '07-11-2026\n05:19 PM',
-      goldBalance: 0.0,
-      silverBalance: -413.043,
-      cashBalance: 23530,
-    },
-    {
-      id: 'L-8',
-      sn: 8,
-      customerNo: 102,
-      name: 'harshil',
-      mobile: '98-7654-321',
-      dateTime: '06-11-2026\n01:52 PM',
-      goldBalance: -12.0,
-      silverBalance: 0.0,
-      cashBalance: 77550,
-    },
-  ];
+  // Dynamically map registered customer ledger balances
+  const ledgerRows: LedgerRowItem[] = customers.map((c, idx) => ({
+    id: c.id,
+    sn: idx + 1,
+    customerNo: c.customerNo,
+    name: c.name,
+    shopName: c.shopName,
+    mobile: c.mobile || '',
+    dateTime: c.createdAt
+      ? `${new Date(c.createdAt).toLocaleDateString('en-GB')}\n${new Date(c.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+      : '',
+    goldBalance: c.balance.gold || 0,
+    silverBalance: c.balance.silver || 0,
+    cashBalance: c.balance.cash || 0,
+  }));
 
   // Merge any registered customer accounts if available
   const displayItems = ledgerRows.filter((item) => {

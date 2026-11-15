@@ -1,18 +1,12 @@
 import { ExchangeTransaction } from '../types';
 import { getItem, setItem } from './storage';
-import { SEED_EXCHANGE_TXNS } from './mockSeedData';
 import { customerService } from './customerService';
 
 const STORAGE_KEY = 'hs_exchange_txns';
 
 export const exchangeService = {
   async getAll(): Promise<ExchangeTransaction[]> {
-    let txns = getItem<ExchangeTransaction[]>(STORAGE_KEY, []);
-    if (!txns || txns.length === 0 || !txns.some((t) => t.transactionNo === 100)) {
-      txns = SEED_EXCHANGE_TXNS;
-      setItem(STORAGE_KEY, txns);
-    }
-    return txns;
+    return getItem<ExchangeTransaction[]>(STORAGE_KEY, []);
   },
 
   async createTransaction(

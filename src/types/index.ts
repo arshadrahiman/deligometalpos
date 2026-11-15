@@ -296,10 +296,15 @@ export interface BusinessStockSummary {
   rawScrapStock: {
     kachaGrossWeight: number;
     kachaFineEquivalent: number;
+    todayGrossWeight?: number;
+    todayFineEquivalent?: number;
   };
   silverStock: {
     weightGm: number;
     avgRate: number;
+    avgSellRate?: number;
+    todayBuyWeight?: number;
+    todaySellWeight?: number;
   };
   marketRates: {
     gold24K: number;
@@ -309,6 +314,24 @@ export interface BusinessStockSummary {
   udhariOutstanding: {
     netCustomerGold: number;
     netCustomerCash: number;
+    netCustomerSilver?: number;
+    udharGold?: number;
+    jamaGold?: number;
+    udharSilver?: number;
+    jamaSilver?: number;
+    udharCash?: number;
+    jamaCash?: number;
+  };
+  capital?: {
+    netPoonjeeCash?: number;
+    totalValuationCash?: number;
+    todayCashProfit?: number;
+    netPoonjeeGold?: number;
+    totalValuationGold?: number;
+    todayGoldProfit?: number;
+    netPoonjeeSilver?: number;
+    totalValuationSilver?: number;
+    todaySilverProfit?: number;
   };
   totalBusinessWorth: number;
   todayProfit: number;
