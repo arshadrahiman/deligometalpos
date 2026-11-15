@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "deligometalpos",
+    "site": "deligometalpos-553b8",
     "public": "dist",
     "ignore": [
       "firebase.json",

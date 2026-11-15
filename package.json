@@ -2,7 +2,7 @@
   "name": "deligometalpos",
   "private": true,
   "version": "1.0.0",
-  "homepage": "https://deligometalpos.web.app",
+  "homepage": "https://deligometalpos-553b8.web.app",
   "type": "module",
   "scripts": {
     "dev": "vite",

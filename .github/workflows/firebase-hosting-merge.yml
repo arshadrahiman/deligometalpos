@@ -39,22 +39,23 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS || secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS_553B8 }}'
           channelId: live
-          projectId: deligometalpos
+          projectId: deligometalpos-553b8
         env:
-          HAS_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS != '' }}
+          HAS_SA: ${{ (secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS || secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS_553B8) != '' }}
 
       - name: Deploy to Firebase Hosting (CLI Token Fallback)
         if: steps.deploy_sa.outcome != 'success'
         run: |
+          SA_KEY='${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS || secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS_553B8 }}'
           if [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
-            npx firebase-tools deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project deligometalpos
-          elif [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS }}" ]; then
-            echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS }}' > sa.json
+            npx firebase-tools deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project deligometalpos-553b8
+          elif [ -n "$SA_KEY" ]; then
+            echo "$SA_KEY" > sa.json
             export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/sa.json
-            npx firebase-tools deploy --only hosting --project deligometalpos
+            npx firebase-tools deploy --only hosting --project deligometalpos-553b8
             rm -f sa.json
           else
-            echo "Waiting for Firebase credentials secret (FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS or FIREBASE_TOKEN)."
+            echo "Waiting for Firebase credentials secret (FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS / FIREBASE_SERVICE_ACCOUNT_DELIGOMETALPOS_553B8 or FIREBASE_TOKEN)."
           fi
